@@ -2,18 +2,24 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lumina's Clínica Estética</title>
+    
+    <!-- PWA META TAGS -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2602/2602052.png">
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     
     <style>
         :root { --bg-color: #f4f4f4; --text-color: #1a1a1a; --sidebar-bg: #ffffff; --border-color: #cccccc; --hover-bg: #e0e0e0; --input-border: #999999; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); height: 100vh; display: flex; justify-content: center; align-items: center; }
+        body { background-color: var(--bg-color); color: var(--text-color); height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
 
         /* Login */
-        #login-screen { background: var(--sidebar-bg); padding: 40px; border-radius: 8px; border: 1px solid var(--border-color); width: 100%; max-width: 400px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #login-screen { background: var(--sidebar-bg); padding: 40px; border-radius: 8px; border: 1px solid var(--border-color); width: 90%; max-width: 400px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         #login-screen h1 { margin-bottom: 20px; font-size: 1.5rem; }
         .input-group { margin-bottom: 15px; text-align: left; }
         .input-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; font-weight: bold; }
@@ -25,14 +31,15 @@
         .error-msg { color: #d32f2f; font-size: 0.85rem; margin-top: 10px; display: none; }
 
         /* App Principal e Menu */
-        #app-screen { display: none; width: 100%; height: 100vh; }
+        #app-screen { display: none; width: 100%; height: 100vh; flex-direction: row; }
         aside { width: 250px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; }
         .logo { text-align: center; font-size: 1.2rem; font-weight: bold; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; }
+        nav { display: flex; flex-direction: column; }
         nav button { width: 100%; background: none; border: none; padding: 15px 20px; text-align: left; font-size: 1rem; cursor: pointer; color: var(--text-color); transition: background 0.2s; display: flex; align-items: center; gap: 10px; }
         nav button:hover { background-color: var(--hover-bg); }
         nav button.active { background-color: var(--text-color); color: var(--bg-color); }
         
-        main { flex: 1; padding: 40px; overflow-y: auto; position: relative; scroll-behavior: smooth; }
+        main { flex: 1; padding: 40px; overflow-y: auto; position: relative; scroll-behavior: smooth; background: var(--bg-color); }
         .view { display: none; background: var(--sidebar-bg); padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); }
         .view.active { display: block; }
         h2 { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
@@ -64,15 +71,17 @@
         
         .btn-cancelar { background: rgba(0,0,0,0.2); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
         .btn-cancelar:hover { background: rgba(0,0,0,0.4); }
-        .btn-acao { background: var(--text-color); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-right: 5px;}
+        .btn-acao { background: var(--text-color); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-right: 5px; margin-bottom: 5px;}
         .btn-acao.danger { background: #d32f2f; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.95rem; }
+        /* Responsividade para Tabelas */
+        .table-responsive { overflow-x: auto; width: 100%; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.95rem; min-width: 600px; }
         th, td { padding: 12px; border-bottom: 1px solid var(--border-color); text-align: left; }
         th { background-color: var(--bg-color); }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: var(--sidebar-bg); padding: 30px; border-radius: 8px; width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;}
+        .modal-content { background: var(--sidebar-bg); padding: 30px; border-radius: 8px; width: 95%; max-width: 500px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;}
         .close-btn { float: right; cursor: pointer; font-size: 1.5rem; font-weight: bold; line-height: 1; }
 
         /* Dashboard & Sub-Tabs */
@@ -81,8 +90,8 @@
         .card h3 { margin-bottom: 10px; font-size: 1rem; color: #666; }
         .card .valor { font-size: 2rem; font-weight: bold; color: var(--text-color); }
 
-        .sub-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
-        .sub-tab-btn { background: none; border: none; padding: 10px 15px; font-size: 1rem; cursor: pointer; border-bottom: 2px solid transparent; color: #666; white-space: nowrap; }
+        .sub-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); overflow-x: auto; white-space: nowrap; padding-bottom: 5px; }
+        .sub-tab-btn { background: none; border: none; padding: 10px 15px; font-size: 1rem; cursor: pointer; border-bottom: 2px solid transparent; color: #666; }
         .sub-tab-btn.active { color: var(--text-color); font-weight: bold; border-bottom: 2px solid var(--text-color); }
         .sub-tab-content { display: none; }
         .sub-tab-content.active { display: block; }
@@ -90,12 +99,49 @@
         .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background: #e0e0e0; color: #333; }
         .badge.ativo { background: #4CAF50; color: white; }
 
-        /* Estilos do Formulário Dinâmico de Anamnese */
+        /* Anamnese */
         .anamnese-bloco { background: var(--hover-bg); padding: 15px; border-radius: 6px; margin-bottom: 15px; }
         .anamnese-pergunta { font-weight: bold; margin-bottom: 10px; font-size: 0.95rem; }
         .anamnese-opcoes { display: flex; gap: 15px; margin-bottom: 10px; }
         .anamnese-opcoes label { cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 0.9rem;}
         .anamnese-detalhe { width: 100%; padding: 8px; border: 1px solid var(--input-border); border-radius: 4px; font-size: 0.85rem; background: #fff;}
+
+        /* =========================================
+           ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS (PWA)
+           ========================================= */
+        @media (max-width: 768px) {
+            body { align-items: flex-start; }
+            #app-screen { flex-direction: column; }
+            
+            /* Sidebar vira menu horizontal no topo */
+            aside { width: 100%; padding: 10px; border-right: none; border-bottom: 1px solid var(--border-color); flex-direction: column; }
+            .logo { padding-bottom: 10px; margin-bottom: 5px; font-size: 1.1rem; }
+            
+            nav { flex-direction: row; overflow-x: auto; padding-bottom: 5px; gap: 5px; }
+            nav button { width: auto; padding: 10px 15px; font-size: 0.9rem; white-space: nowrap; border-radius: 4px; }
+            nav button.active { border-radius: 4px; }
+            
+            #btn-logout { align-self: flex-end; margin-top: 5px; padding: 10px !important; }
+
+            /* Espaçamento Principal */
+            main { padding: 15px; }
+            .view { padding: 15px; }
+            h2 { font-size: 1.3rem; }
+
+            /* Formulários em Coluna */
+            .form-row { flex-direction: column; gap: 10px; }
+            .checkbox-list label { width: 100%; }
+
+            /* Dashboard Cards empilhados */
+            .dashboard-cards { flex-direction: column; gap: 10px; }
+
+            /* Agenda ajustes para caber na tela */
+            .agenda-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .date-controls { width: 100%; justify-content: space-between; }
+            .agenda-time { width: 60px; font-size: 0.9rem; padding: 15px 5px; }
+            .agenda-slot { padding: 10px; flex-direction: column; align-items: flex-start; gap: 10px; font-size: 0.9rem; }
+            .btn-cancelar { width: 100%; padding: 8px; }
+        }
     </style>
 </head>
 <body>
@@ -116,10 +162,10 @@
                 <button onclick="changeView('pacientes')" id="menu-pacientes" class="menu-item">👥 Pacientes</button>
                 <button onclick="changeView('procedimentos')" id="menu-procedimentos" class="menu-item">✨ Procedimentos</button>
                 <button onclick="changeView('documentos')" id="menu-documentos" class="menu-item">📄 Documentos</button>
-                <button onclick="changeView('profissionais')" id="menu-profissionais" class="menu-item">👩‍⚕️ Profissionais</button>
-                <button onclick="changeView('configuracoes')" id="menu-configuracoes" class="menu-item">⚙️ Configurações</button>
+                <button onclick="changeView('profissionais')" id="menu-profissionais" class="menu-item">👩‍⚕️ Profissinais</button>
+                <button onclick="changeView('configuracoes')" id="menu-configuracoes" class="menu-item">⚙️ Config.</button>
             </nav>
-            <button onclick="fazerLogout()" style="margin-top: auto; color: #666; background: none; border: none; padding: 15px; cursor: pointer;">🚪 Sair</button>
+            <button id="btn-logout" onclick="fazerLogout()" style="color: #666; background: none; border: none; padding: 15px; cursor: pointer;">🚪 Sair</button>
         </aside>
 
         <main id="main-content">
@@ -141,11 +187,14 @@
                 <h2>👥 Cadastro de Pacientes</h2>
                 <div class="form-row">
                     <div class="input-group"><label>Nome Completo</label><input type="text" id="pac-nome"></div>
-                    <div class="input-group"><label>WhatsApp</label><input type="text" id="pac-whatsapp"></div>
+                    <div class="input-group"><label>WhatsApp</label><input type="text" id="pac-whatsapp" placeholder="(XX) 9XXXX-XXXX"></div>
                 </div>
-                <button class="btn-primary" style="width: auto; padding: 10px 30px;" onclick="salvarPaciente()">Cadastrar Paciente</button>
+                <button class="btn-primary" style="width: 100%; max-width: 250px; padding: 10px;" onclick="salvarPaciente()">Cadastrar Paciente</button>
+                
                 <h3 style="margin-top: 40px; margin-bottom: 10px;">📋 Lista de Pacientes</h3>
-                <table><thead><tr><th>Nome</th><th>WhatsApp</th></tr></thead><tbody id="tabela-pacientes"></tbody></table>
+                <div class="table-responsive">
+                    <table><thead><tr><th>Nome</th><th>WhatsApp</th></tr></thead><tbody id="tabela-pacientes"></tbody></table>
+                </div>
             </div>
 
             <!-- PROCEDIMENTOS -->
@@ -157,14 +206,10 @@
                     <div class="input-group"><label>Nome do Serviço</label><input type="text" id="proc-nome" placeholder="Ex: Peeling de Diamante"></div>
                     <div class="input-group"><label>Categoria</label>
                         <select id="proc-categoria">
-                            <option value="Avaliações">Avaliações</option>
-                            <option value="Corporal">Corporal</option>
-                            <option value="Endolaser">Endolaser</option>
-                            <option value="Facial">Facial</option>
-                            <option value="Laser">Laser</option>
-                            <option value="Massagens">Massagens</option>
-                            <option value="Velaryan">Velaryan</option>
-                            <option value="Outros">Outros</option>
+                            <option value="Avaliações">Avaliações</option><option value="Corporal">Corporal</option>
+                            <option value="Endolaser">Endolaser</option><option value="Facial">Facial</option>
+                            <option value="Laser">Laser</option><option value="Massagens">Massagens</option>
+                            <option value="Velaryan">Velaryan</option><option value="Outros">Outros</option>
                         </select>
                     </div>
                     <div class="input-group"><label>Status</label><select id="proc-status"><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option></select></div>
@@ -181,22 +226,24 @@
                     <div class="input-group"><label>Especialidade</label><input type="text" id="proc-especialidade" placeholder="Ex: Estética Facial"></div>
                 </div>
                 <div class="form-row">
-                    <div class="input-group"><label>Descritivo do Procedimento</label><textarea id="proc-descricao" placeholder="Detalhes de como o procedimento é realizado..."></textarea></div>
-                    <div class="input-group"><label>Benefícios</label><textarea id="proc-beneficios" placeholder="Ex: Reduz flacidez, estimula colágeno..."></textarea></div>
+                    <div class="input-group"><label>Descritivo do Procedimento</label><textarea id="proc-descricao" placeholder="Detalhes..."></textarea></div>
+                    <div class="input-group"><label>Benefícios</label><textarea id="proc-beneficios" placeholder="Ex: Reduz flacidez..."></textarea></div>
                 </div>
                 <div class="form-row">
-                    <div class="input-group"><label>Cuidados Pós-Procedimento</label><textarea id="proc-cuidados" placeholder="Ex: Evitar sol por 48h..."></textarea></div>
+                    <div class="input-group"><label>Cuidados Pós</label><textarea id="proc-cuidados" placeholder="Ex: Evitar sol..."></textarea></div>
                     <div class="input-group">
-                        <label>Tempo de Retorno</label><input type="text" id="proc-retorno" placeholder="Ex: 15 dias, 1 mês, Não definido">
-                        <label style="margin-top:10px;">Obs. de Preço/Desconto</label><input type="text" id="proc-obs-preco" placeholder="Ex: Valor da avaliação é descontado no final.">
+                        <label>Tempo de Retorno</label><input type="text" id="proc-retorno" placeholder="Ex: 15 dias">
+                        <label style="margin-top:10px;">Obs. de Preço</label><input type="text" id="proc-obs-preco" placeholder="Ex: Avaliação é descontada.">
                     </div>
                 </div>
                 
-                <button class="btn-primary" id="btn-salvar-proc" style="width: auto; padding: 10px 30px;" onclick="salvarProcedimento()">Salvar Procedimento</button>
-                <button class="btn-primary" id="btn-cancelar-edit-proc" style="display:none; background:#999; margin-left: 10px; width: auto; padding: 10px 30px;" onclick="cancelarEdicaoProcedimento()">Cancelar Edição</button>
-                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn-primary" id="btn-salvar-proc" style="width: auto; flex: 1; padding: 10px;" onclick="salvarProcedimento()">Salvar Procedimento</button>
+                    <button class="btn-primary" id="btn-cancelar-edit-proc" style="display:none; background:#999; width: auto; flex: 1; padding: 10px;" onclick="cancelarEdicaoProcedimento()">Cancelar Edição</button>
+                </div>
+
                 <h3 style="margin-top: 40px; margin-bottom: 10px;">📋 Serviços Ativos</h3>
-                <div style="overflow-x: auto;">
+                <div class="table-responsive">
                     <table>
                         <thead><tr><th>Categoria</th><th>Procedimento</th><th>Duração</th><th>Valor</th><th>Ações</th></tr></thead>
                         <tbody id="tabela-procedimentos-ativos"></tbody>
@@ -204,7 +251,7 @@
                 </div>
 
                 <h3 style="margin-top: 40px; margin-bottom: 10px; color: #d32f2f;">🗑️ Lixeira (Inativos)</h3>
-                <div style="overflow-x: auto;">
+                <div class="table-responsive">
                     <table>
                         <thead><tr><th>Categoria</th><th>Procedimento</th><th>Duração</th><th>Valor</th><th>Ações</th></tr></thead>
                         <tbody id="tabela-procedimentos-inativos"></tbody>
@@ -219,11 +266,10 @@
                     <button class="sub-tab-btn active" onclick="mudarAbaDocumento('doc-anamnese', this)">Anamneses</button>
                     <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-prontuario', this)">Prontuários</button>
                     <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-receita', this)">Receitas</button>
-                    <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-termo', this)">Termos de Consentimento</button>
+                    <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-termo', this)">Termos</button>
                     <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-atestado', this)">Atestados</button>
                 </div>
                 
-                <!-- ABA ANAMNESE -->
                 <div id="doc-anamnese" class="sub-tab-content active">
                     <div class="form-row">
                         <div class="input-group">
@@ -231,28 +277,30 @@
                             <select id="anamnese-paciente"><option value="">Selecione um paciente...</option></select>
                         </div>
                         <div class="input-group">
-                            <label>Selecione o Procedimento (Isso define as perguntas)</label>
+                            <label>Selecione o Procedimento</label>
                             <select id="anamnese-procedimento" onchange="gerarFormularioAnamnese()"><option value="">Selecione um procedimento...</option></select>
                         </div>
                     </div>
                     
                     <div id="anamnese-dinamica-container" style="margin-top: 10px;">
-                        <p style="color: #666; font-style: italic;">Selecione um procedimento acima para carregar as perguntas da anamnese.</p>
+                        <p style="color: #666; font-style: italic;">Selecione um procedimento acima para carregar as perguntas.</p>
                     </div>
                     
-                    <button class="btn-primary" id="btn-salvar-anamnese" style="display: none; width: auto; padding: 10px 30px;" onclick="salvarAnamnese()">💾 Salvar Anamnese no Histórico</button>
+                    <button class="btn-primary" id="btn-salvar-anamnese" style="display: none; width: 100%; max-width: 300px; padding: 10px;" onclick="salvarAnamnese()">💾 Salvar Anamnese</button>
 
                     <h3 style="margin-top: 50px; margin-bottom: 10px;">📋 Histórico de Anamneses Salvas</h3>
-                    <table>
-                        <thead><tr><th>Data</th><th>Paciente</th><th>Procedimento</th><th>Ações</th></tr></thead>
-                        <tbody id="tabela-anamneses"></tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Data</th><th>Paciente</th><th>Procedimento</th><th>Ações</th></tr></thead>
+                            <tbody id="tabela-anamneses"></tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div id="doc-prontuario" class="sub-tab-content"><p style="color: #666; font-style: italic;">Módulo de Prontuários em construção.</p></div>
-                <div id="doc-receita" class="sub-tab-content"><p style="color: #666; font-style: italic;">Módulo de Receitas em construção.</p></div>
-                <div id="doc-termo" class="sub-tab-content"><p style="color: #666; font-style: italic;">Módulo de Termos em construção.</p></div>
-                <div id="doc-atestado" class="sub-tab-content"><p style="color: #666; font-style: italic;">Módulo de Atestados em construção.</p></div>
+                <div id="doc-prontuario" class="sub-tab-content"><p style="color: #666;">Módulo de Prontuários em construção.</p></div>
+                <div id="doc-receita" class="sub-tab-content"><p style="color: #666;">Módulo de Receitas em construção.</p></div>
+                <div id="doc-termo" class="sub-tab-content"><p style="color: #666;">Módulo de Termos em construção.</p></div>
+                <div id="doc-atestado" class="sub-tab-content"><p style="color: #666;">Módulo de Atestados em construção.</p></div>
             </div>
 
             <!-- PROFISSIONAIS -->
@@ -278,14 +326,21 @@
                         <label><input type="checkbox" id="perm-configuracoes"> ⚙️ Configurações</label>
                     </div>
                 </div>
-                <button class="btn-primary" id="btn-salvar-prof" style="margin-top: 10px; width: auto; padding: 10px 30px;" onclick="salvarProfissional()">Salvar Profissional</button>
-                <button class="btn-primary" id="btn-cancelar-edit" style="display:none; background:#999; margin-left: 10px; width: auto; padding: 10px 30px;" onclick="cancelarEdicaoProfissional()">Cancelar Edição</button>
+                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn-primary" id="btn-salvar-prof" style="width: auto; flex: 1; padding: 10px;" onclick="salvarProfissional()">Salvar Profissional</button>
+                    <button class="btn-primary" id="btn-cancelar-edit" style="display:none; background:#999; width: auto; flex: 1; padding: 10px;" onclick="cancelarEdicaoProfissional()">Cancelar Edição</button>
+                </div>
 
                 <h3 style="margin-top: 40px; margin-bottom: 10px;">📋 Profissionais Ativos</h3>
-                <table><thead><tr><th>Nome</th><th>Especialidade</th><th>Nick</th><th>Ações</th></tr></thead><tbody id="tabela-profissionais-ativos"></tbody></table>
+                <div class="table-responsive">
+                    <table><thead><tr><th>Nome</th><th>Especialidade</th><th>Nick</th><th>Ações</th></tr></thead><tbody id="tabela-profissionais-ativos"></tbody></table>
+                </div>
 
                 <h3 style="margin-top: 40px; margin-bottom: 10px; color: #d32f2f;">🗑️ Lixeira (Inativos)</h3>
-                <table><thead><tr><th>Nome</th><th>Especialidade</th><th>Nick</th><th>Ações</th></tr></thead><tbody id="tabela-profissionais-inativos"></tbody></table>
+                <div class="table-responsive">
+                    <table><thead><tr><th>Nome</th><th>Especialidade</th><th>Nick</th><th>Ações</th></tr></thead><tbody id="tabela-profissionais-inativos"></tbody></table>
+                </div>
             </div>
 
             <!-- CONFIGURAÇÕES -->
@@ -303,13 +358,13 @@
                     </div>
                 </div>
 
-                <h3 style="margin-bottom: 15px; margin-top: 30px; border-bottom: 1px solid var(--border-color); padding-bottom:5px;">🕒 Horário de Funcionamento da Agenda</h3>
+                <h3 style="margin-bottom: 15px; margin-top: 30px; border-bottom: 1px solid var(--border-color); padding-bottom:5px;">🕒 Horário da Agenda</h3>
                 <div class="form-row">
-                    <div class="input-group"><label>Hora de Abertura</label><input type="time" id="conf-abertura"></div>
-                    <div class="input-group"><label>Hora de Fechamento</label><input type="time" id="conf-fechamento"></div>
-                    <div class="input-group"><label>Horário de Almoço</label><input type="time" id="conf-almoco"></div>
+                    <div class="input-group"><label>Abertura</label><input type="time" id="conf-abertura"></div>
+                    <div class="input-group"><label>Fechamento</label><input type="time" id="conf-fechamento"></div>
+                    <div class="input-group"><label>Almoço</label><input type="time" id="conf-almoco"></div>
                 </div>
-                <button class="btn-primary" style="width: auto; padding: 10px 30px;" onclick="salvarConfiguracoesHorario()">Sincronizar Agenda</button>
+                <button class="btn-primary" style="width: 100%; max-width: 250px; padding: 10px;" onclick="salvarConfiguracoesHorario()">Sincronizar Agenda</button>
             </div>
         </main>
     </div>
@@ -318,35 +373,46 @@
     <div id="modal-agendamento" class="modal-overlay">
         <div class="modal-content">
             <span class="close-btn" onclick="fecharModal()">&times;</span>
-            <h2 style="border-bottom: none; margin-bottom: 5px;">📅 Agendar Horário</h2>
+            <h2 style="border-bottom: none; margin-bottom: 5px;">📅 Agendar</h2>
             <p id="modal-horario" style="margin-bottom: 20px; font-weight: bold; color: #666;"></p>
 
             <div class="input-group">
-                <label>Paciente (Busque ou cadastre na hora)</label>
+                <label>Paciente</label>
                 <input list="lista-pacientes" id="modal-paciente-nome" placeholder="Ex: Maria Clara">
                 <datalist id="lista-pacientes"></datalist>
             </div>
             <div class="input-group">
                 <label>WhatsApp (Se paciente novo)</label>
-                <input type="text" id="modal-paciente-whatsapp" placeholder="(Opcional)">
+                <input type="tel" id="modal-paciente-whatsapp" placeholder="(Opcional)">
             </div>
             <div class="input-group">
                 <label>Procedimento</label>
                 <select id="modal-procedimento"><option value="">Selecione um procedimento...</option></select>
             </div>
-            <button class="btn-primary" onclick="confirmarAgendamento()">Confirmar Agendamento</button>
+            <button class="btn-primary" onclick="confirmarAgendamento()">Confirmar</button>
         </div>
     </div>
 
     <!-- MODAL VISUALIZAR ANAMNESE -->
     <div id="modal-view-anamnese" class="modal-overlay">
-        <div class="modal-content" style="width: 600px;">
+        <div class="modal-content">
             <span class="close-btn" onclick="document.getElementById('modal-view-anamnese').style.display='none'">&times;</span>
             <h2 style="border-bottom: none; margin-bottom: 5px;">📄 Resumo da Anamnese</h2>
             <p id="view-anamnese-info" style="margin-bottom: 20px; font-weight: bold; color: #666;"></p>
             <div id="view-anamnese-respostas" style="background: var(--bg-color); padding: 15px; border-radius: 6px; font-size: 0.9rem;"></div>
         </div>
     </div>
+
+    <!-- SCRIPT DE REGISTRO DO SERVICE WORKER (PWA) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => console.log('PWA Service Worker Registrado!', reg))
+                    .catch((err) => console.log('Falha ao registrar PWA Service Worker', err));
+            });
+        }
+    </script>
 
     <script>
         let HORARIOS_AGENDA = [];
@@ -431,6 +497,8 @@
             document.getElementById(viewId).classList.add('active');
             document.getElementById('menu-' + viewId).classList.add('active');
             if(viewId === 'configuracoes') atualizarDashboard(); 
+            // Fechar sidebar automaticamente no celular ao clicar em um menu
+            if (window.innerWidth <= 768) { document.getElementById('main-content').scrollIntoView(); }
         }
 
         function mudarAbaDocumento(abaId, btnElement) {
@@ -440,7 +508,6 @@
             btnElement.classList.add('active');
         }
 
-        /* --- LÓGICA DE DATAS E AGENDA MANTIDA INTACTA --- */
         async function mudarData(dias) {
             dataAtualObj.setDate(dataAtualObj.getDate() + dias);
             dataSelecionadaStr = obterDataFormatadaParaInput(dataAtualObj);
@@ -472,13 +539,13 @@
                     if (agendamento.is_continuacao) {
                         slotDiv.innerHTML = `<span>↳ Continuação: ${agendamento.paciente_nome}</span>`; slotDiv.classList.add('slot-continuacao');
                     } else {
-                        slotDiv.innerHTML = `<span>👤 ${agendamento.paciente_nome} - ${agendamento.procedimento_nome}</span>`; slotDiv.classList.add('slot-ocupado');
+                        slotDiv.innerHTML = `<span>👤 ${agendamento.paciente_nome} - <br><small>${agendamento.procedimento_nome}</small></span>`; slotDiv.classList.add('slot-ocupado');
                         const btnCancelar = document.createElement('button'); btnCancelar.className = 'btn-cancelar'; btnCancelar.textContent = 'Desmarcar';
                         btnCancelar.onclick = (e) => cancelarAgendamento(agendamento.id_agrupador, e);
                         slotDiv.appendChild(btnCancelar);
                     }
                 } else {
-                    slotDiv.textContent = 'Livre (Clique para Agendar)'; slotDiv.classList.add('slot-livre');
+                    slotDiv.textContent = 'Livre (Agendar)'; slotDiv.classList.add('slot-livre');
                     slotDiv.onclick = () => abrirModalAgendamento(hora);
                 }
                 row.appendChild(timeDiv); row.appendChild(slotDiv); container.appendChild(row);
@@ -488,7 +555,7 @@
 
         function abrirModalAgendamento(hora) {
             horaSelecionadaParaAgendamento = hora;
-            document.getElementById('modal-horario').textContent = `Dia ${formatarDataVisor(dataSelecionadaStr)} - Horário: ${hora}`;
+            document.getElementById('modal-horario').textContent = `${formatarDataVisor(dataSelecionadaStr)} - ${hora}`;
             document.getElementById('modal-agendamento').style.display = 'flex';
         }
         function fecharModal() {
@@ -521,10 +588,10 @@
                 const horaAlmocoSimplificada = confAlmoco.split(':')[0] + ':00';
 
                 if (!horaAnalise || horaAnalise === horaAlmocoSimplificada) {
-                    return alert("O tempo do procedimento ultrapassa o horário de almoço ou o fim do expediente.");
+                    return alert("O tempo do procedimento ultrapassa o almoço ou fim do expediente.");
                 }
                 const conflito = agendamentosDoDiaGlobais.find(a => a.hora === horaAnalise);
-                if (conflito && i > 0) return alert("Não há espaço contínuo suficiente na agenda para a duração deste procedimento.");
+                if (conflito && i > 0) return alert("Não há espaço contínuo na agenda.");
 
                 agendamentosParaInserir.push({ id_agrupador: idAgrupador, data_agendamento: dataSelecionadaStr, hora: horaAnalise, paciente_nome: pacienteNome, procedimento_nome: procedimentoNome, is_continuacao: i > 0 });
             }
@@ -547,13 +614,13 @@
         async function salvarPaciente(nomeDireto = null, whatsDireto = null) {
             const nome = nomeDireto || document.getElementById('pac-nome').value.trim();
             const whatsapp = whatsDireto || document.getElementById('pac-whatsapp').value.trim();
-            if(!nome) return alert("O nome do paciente é obrigatório!");
+            if(!nome) return alert("Nome obrigatório!");
 
             await supabaseClient.from('pacientes').insert([{ nome, whatsapp }]);
             if(!nomeDireto) {
                 document.getElementById('pac-nome').value = '';
                 document.getElementById('pac-whatsapp').value = '';
-                alert("Paciente cadastrado com sucesso!");
+                alert("Paciente cadastrado!");
             }
             await atualizarListaPacientes();
         }
@@ -564,7 +631,7 @@
             
             const tbody = document.getElementById('tabela-pacientes');
             const datalist = document.getElementById('lista-pacientes');
-            const selectAnamnese = document.getElementById('anamnese-paciente'); // Atualiza dropdown da anamnese
+            const selectAnamnese = document.getElementById('anamnese-paciente'); 
 
             tbody.innerHTML = ''; datalist.innerHTML = ''; selectAnamnese.innerHTML = '<option value="">Selecione um paciente...</option>';
             
@@ -579,7 +646,6 @@
             }
         }
 
-        /* --- PROCEDIMENTOS E PROFISSIONAIS MANTIDOS INTACTOS --- */
         async function salvarProcedimento() {
             const idEdit = document.getElementById('proc-id-edit').value;
             const nome = document.getElementById('proc-nome').value.trim();
@@ -594,16 +660,16 @@
             const retorno = document.getElementById('proc-retorno').value.trim();
             const observacao_preco = document.getElementById('proc-obs-preco').value.trim();
 
-            if(!nome) return alert("Nome do procedimento obrigatório!");
+            if(!nome) return alert("Nome obrigatório!");
 
             const payload = { nome, categoria, status, duracao, valor, especialidade, descricao, beneficios, cuidados_pos, retorno, observacao_preco };
 
             if(idEdit) {
                 await supabaseClient.from('procedimentos').update(payload).eq('id', idEdit);
-                alert("Procedimento atualizado com sucesso!");
+                alert("Atualizado!");
             } else {
                 await supabaseClient.from('procedimentos').insert([payload]);
-                alert("Procedimento salvo com sucesso!");
+                alert("Salvo!");
             }
             cancelarEdicaoProcedimento();
             await atualizarListaProcedimentos();
@@ -641,7 +707,7 @@
 
         async function alterarStatusProcedimento(id, restaurar) {
             const novoStatus = restaurar ? 'Ativo' : 'Inativo';
-            if(!restaurar && !confirm("Deseja mover este procedimento para a lixeira?")) return;
+            if(!restaurar && !confirm("Mover para a lixeira?")) return;
             await supabaseClient.from('procedimentos').update({ status: novoStatus }).eq('id', id);
             await atualizarListaProcedimentos();
         }
@@ -653,14 +719,14 @@
             const tbodyAtivos = document.getElementById('tabela-procedimentos-ativos');
             const tbodyInativos = document.getElementById('tabela-procedimentos-inativos');
             const selectProcedimento = document.getElementById('modal-procedimento');
-            const selectAnamneseProc = document.getElementById('anamnese-procedimento'); // Para Anamnese
+            const selectAnamneseProc = document.getElementById('anamnese-procedimento'); 
             
             tbodyAtivos.innerHTML = ''; tbodyInativos.innerHTML = '';
             selectProcedimento.innerHTML = '<option value="">Selecione...</option>';
             selectAnamneseProc.innerHTML = '<option value="">Selecione um procedimento...</option>';
             
             if (procedimentosGlobais.length === 0) {
-                tbodyAtivos.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#666;">Nenhum procedimento.</td></tr>`;
+                tbodyAtivos.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#666;">Nenhum.</td></tr>`;
             } else {
                 procedimentosGlobais.forEach(proc => {
                     const rowHtml = `<tr>
@@ -679,7 +745,7 @@
                                       <button class="btn-acao danger" onclick="alterarStatusProcedimento('${proc.id}', false)">🗑️ Lixeira</button>`;
                         tbodyAtivos.innerHTML += rowHtml.replace('__BOTOES__', botoes);
                         
-                        selectProcedimento.innerHTML += `<option value="${proc.nome}">${proc.nome} (${proc.duracao}m - R$${proc.valor})</option>`;
+                        selectProcedimento.innerHTML += `<option value="${proc.nome}">${proc.nome}</option>`;
                         selectAnamneseProc.innerHTML += `<option value="${proc.nome}">${proc.nome}</option>`;
                     }
                 });
@@ -712,7 +778,7 @@
             const nick = document.getElementById('cad-nick').value.trim();
             const especialidade = document.getElementById('cad-especialidade').value.trim();
             const senha = document.getElementById('cad-senha').value.trim();
-            if(senha.length !== 8) return alert("A senha deve ter exatamente 8 dígitos.");
+            if(senha.length !== 8) return alert("A senha deve ter 8 dígitos.");
 
             let permissoes = [];
             ['agenda', 'pacientes', 'procedimentos', 'documentos', 'profissionais', 'configuracoes'].forEach(p => {
@@ -721,10 +787,11 @@
 
             if(idEdit) {
                 await supabaseClient.from('usuarios').update({ nome, nick, especialidade, senha, permissoes }).eq('id', idEdit);
-                alert("Profissional atualizado!");
+                alert("Atualizado!");
             } else {
-                await supabaseClient.from('usuarios').insert([{ nome, nick, especialidade, senha, permissoes }]);
-                alert("Profissional cadastrado!");
+                const { error } = await supabaseClient.from('usuarios').insert([{ nome, nick, especialidade, senha, permissoes }]);
+                if(error) return alert("Erro. Nickname pode já existir.");
+                alert("Cadastrado!");
             }
             cancelarEdicaoProfissional();
             await carregarProfissionais();
@@ -771,7 +838,7 @@
             const novaAbertura = document.getElementById('conf-abertura').value;
             const novoFechamento = document.getElementById('conf-fechamento').value;
             const novoAlmoco = document.getElementById('conf-almoco').value;
-            if(!novaAbertura || !novoFechamento || !novoAlmoco) return alert("Preencha todos os horários.");
+            if(!novaAbertura || !novoFechamento || !novoAlmoco) return alert("Preencha todos.");
 
             localStorage.setItem('lumina_abertura', novaAbertura);
             localStorage.setItem('lumina_fechamento', novoFechamento);
@@ -780,7 +847,7 @@
 
             gerarArrayDeHorarios();
             gerarGradeAgenda(); 
-            alert("Horários atualizados e sincronizados!");
+            alert("Sincronizados!");
         }
 
         function atualizarDashboard() {
@@ -795,12 +862,6 @@
             document.getElementById('dash-data-ref').textContent = `Ref: ${formatarDataVisor(dataSelecionadaStr)}`;
         }
 
-
-        // ==========================================
-        // NOVO: MOTOR DE ANAMNESE DINÂMICA
-        // ==========================================
-        
-        // 1. Banco de Perguntas baseadas na Categoria do Procedimento
         const BANCO_PERGUNTAS = {
             'injetaveis': [
                 "Possui alergia a anestésicos, medicamentos ou substâncias sintéticas?",
@@ -826,12 +887,12 @@
                 "Possui problemas de cicatrização (queloides ou hipertrófica)?",
                 "Fez alguma cirurgia recente na região a ser tratada?",
                 "Tem diabetes ou hipertensão descompensada?",
-                "Está utilizando algum medicamento de uso contínuo (citar em detalhes)?"
+                "Está utilizando algum medicamento de uso contínuo?"
             ],
             'massagem': [
                 "Possui fraturas recentes, osteoporose ou problemas na coluna?",
                 "Tem histórico de trombose venosa profunda?",
-                "Possui algum processo inflamatório ou infeccioso agudo (febre, gripe)?",
+                "Possui algum processo inflamatório ou infeccioso agudo?",
                 "Está gestante (se sim, especificar semanas)?"
             ],
             'laser': [
@@ -854,7 +915,6 @@
             ]
         };
 
-        // 2. Função que lê o nome do Procedimento e define as perguntas
         function identificarCategoriaProcedimento(nomeProc) {
             nomeProc = nomeProc.toLowerCase();
             if (nomeProc.includes('botox') || nomeProc.includes('preenchimento') || nomeProc.includes('harmonização') || nomeProc.includes('bioestimulador') || nomeProc.includes('peim')) return 'injetaveis';
@@ -864,18 +924,16 @@
             if (nomeProc.includes('nutricionista')) return 'nutricao';
             if (nomeProc.includes('limpeza') || nomeProc.includes('peeling') || nomeProc.includes('microagulhamento') || nomeProc.includes('skinbooster') || nomeProc.includes('melasma') || nomeProc.includes('rosácea') || nomeProc.includes('hydragloss')) return 'facial';
             if (nomeProc.includes('emagrecimento') || nomeProc.includes('bronze') || nomeProc.includes('velaryan')) return 'corporal';
-            
-            return 'geral'; // Caso genérico
+            return 'geral'; 
         }
 
-        // 3. Monta o HTML dinâmico das perguntas
         function gerarFormularioAnamnese() {
             const selectProc = document.getElementById('anamnese-procedimento').value;
             const container = document.getElementById('anamnese-dinamica-container');
             const btnSalvar = document.getElementById('btn-salvar-anamnese');
 
             if(!selectProc) {
-                container.innerHTML = '<p style="color: #666; font-style: italic;">Selecione um procedimento acima para carregar as perguntas.</p>';
+                container.innerHTML = '<p style="color: #666; font-style: italic;">Selecione um procedimento acima.</p>';
                 btnSalvar.style.display = 'none';
                 return;
             }
@@ -893,7 +951,7 @@
                             <label><input type="radio" name="pergunta_${index}" value="Sim"> Sim</label>
                             <label><input type="radio" name="pergunta_${index}" value="Não"> Não</label>
                         </div>
-                        <input type="text" class="anamnese-detalhe" id="detalhe_${index}" placeholder="Detalhes ou observações (opcional)...">
+                        <input type="text" class="anamnese-detalhe" id="detalhe_${index}" placeholder="Detalhes (opcional)...">
                     </div>
                 `;
             });
@@ -901,12 +959,11 @@
             btnSalvar.style.display = 'block';
         }
 
-        // 4. Salva a Anamnese no Supabase
         async function salvarAnamnese() {
             const paciente = document.getElementById('anamnese-paciente').value;
             const procedimento = document.getElementById('anamnese-procedimento').value;
 
-            if(!paciente || !procedimento) return alert("Selecione o Paciente e o Procedimento.");
+            if(!paciente || !procedimento) return alert("Selecione Paciente e Procedimento.");
 
             const categoria = identificarCategoriaProcedimento(procedimento);
             const perguntas = BANCO_PERGUNTAS[categoria];
@@ -930,19 +987,15 @@
                 respostas: JSON.stringify(respostasFinais) 
             }]);
 
-            if(error) return alert("Erro ao salvar anamnese.");
+            if(error) return alert("Erro ao salvar.");
             
-            alert("Anamnese salva com sucesso no Histórico!");
-            
-            // Limpa o formulário
+            alert("Salva com sucesso!");
             document.getElementById('anamnese-paciente').value = '';
             document.getElementById('anamnese-procedimento').value = '';
-            gerarFormularioAnamnese(); // Irá ocultar e resetar
-            
+            gerarFormularioAnamnese(); 
             await atualizarListaAnamneses();
         }
 
-        // 5. Atualiza a Tabela de Histórico
         async function atualizarListaAnamneses() {
             const { data } = await supabaseClient.from('anamneses').select('*').order('data_criacao', { ascending: false });
             anamnesesGlobais = data || [];
@@ -951,7 +1004,7 @@
             tbody.innerHTML = '';
             
             if (anamnesesGlobais.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#666;">Nenhuma anamnese registrada.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#666;">Nenhuma registrada.</td></tr>`;
             } else {
                 anamnesesGlobais.forEach(anamnese => {
                     const dataFormatada = formatarDataHoraBrasileira(anamnese.data_criacao);
@@ -967,7 +1020,6 @@
             }
         }
 
-        // 6. Visualizar Anamnese Salva
         function visualizarAnamnese(id) {
             const anamnese = anamnesesGlobais.find(a => a.id === id);
             if(!anamnese) return;
@@ -983,8 +1035,7 @@
             containerRespostas.innerHTML = '';
 
             respostas.forEach((item, index) => {
-                let corResposta = item.resposta === 'Sim' ? '#d32f2f' : (item.resposta === 'Não' ? '#4CAF50' : '#666'); // Sim em vermelho (alerta), Não em verde
-                
+                let corResposta = item.resposta === 'Sim' ? '#d32f2f' : (item.resposta === 'Não' ? '#4CAF50' : '#666'); 
                 containerRespostas.innerHTML += `
                     <div style="margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
                         <p style="font-weight: bold; margin-bottom: 5px;">${index + 1}. ${item.pergunta}</p>
@@ -993,7 +1044,6 @@
                     </div>
                 `;
             });
-
             document.getElementById('modal-view-anamnese').style.display = 'flex';
         }
     </script>
