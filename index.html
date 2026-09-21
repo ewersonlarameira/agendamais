@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina's Clínica Estética</title>
-    <!-- Importação do Supabase -->
+    <!-- 1. Importação do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 2. Importação das suas Chaves de Configuração -->
+    <script src="config.js"></script>
+    
     <style>
         :root { --bg-color: #f4f4f4; --text-color: #1a1a1a; --sidebar-bg: #ffffff; --border-color: #cccccc; --hover-bg: #e0e0e0; --input-border: #999999; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -140,7 +143,7 @@
 
             <div id="configuracoes" class="view">
                 <h2>⚙️ Configurações</h2>
-                <p>O aplicativo agora está rodando em tempo real com o banco de dados Supabase.</p>
+                <p>O aplicativo agora está rodando em tempo real com o banco de dados Supabase e as chaves estão isoladas no config.js.</p>
             </div>
         </main>
     </div>
@@ -164,12 +167,8 @@
         </div>
     </div>
 
+    <!-- LÓGICA PRINCIPAL (Sem credenciais) -->
     <script>
-        // CONFIGURAÇÃO SUPABASE (Substitua as chaves abaixo pelas suas!)
-        const SUPABASE_URL = 'COLE_AQUI_SUA_PROJECT_URL';
-        const SUPABASE_ANON_KEY = 'COLE_AQUI_SUA_API_KEY';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
         let horaSelecionadaParaAgendamento = '';
         const HORARIOS_AGENDA = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
         let pacientesGlobais = [];
@@ -187,6 +186,7 @@
             const nick = document.getElementById('login-nick').value;
             const senha = document.getElementById('login-senha').value;
             
+            // "supabase" agora vem do arquivo config.js
             const { data, error } = await supabase
                 .from('usuarios')
                 .select('*')
@@ -430,14 +430,6 @@
                 gerarGradeAgenda();
             }
         }
-<!-- Importação do Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- A sua configuração -->
-<script src="config.js"></script>
-
-<script>
-    // A partir daqui, apague as 3 linhas antigas do supabase (URL, KEY e createClient).
-    // O resto do código continua igual...  
-  </script>
+    </script>
 </body>
 </html>
