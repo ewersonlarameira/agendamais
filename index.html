@@ -16,10 +16,12 @@
     <style>
         :root { --bg-color: #f4f4f4; --text-color: #1a1a1a; --sidebar-bg: #ffffff; --border-color: #cccccc; --hover-bg: #e0e0e0; --input-border: #999999; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-color); height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        
+        /* Base Body - Ajuste para evitar corte no mobile */
+        body { background-color: var(--bg-color); color: var(--text-color); min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow-x: hidden; }
 
         /* Login */
-        #login-screen { background: var(--sidebar-bg); padding: 40px; border-radius: 8px; border: 1px solid var(--border-color); width: 90%; max-width: 400px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #login-screen { background: var(--sidebar-bg); padding: 40px; border-radius: 8px; border: 1px solid var(--border-color); width: 90%; max-width: 400px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin: 20px auto; }
         #login-screen h1 { margin-bottom: 20px; font-size: 1.5rem; }
         .input-group { margin-bottom: 15px; text-align: left; }
         .input-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; font-weight: bold; }
@@ -31,15 +33,19 @@
         .error-msg { color: #d32f2f; font-size: 0.85rem; margin-top: 10px; display: none; }
 
         /* App Principal e Menu */
-        #app-screen { display: none; width: 100%; height: 100vh; flex-direction: row; }
-        aside { width: 250px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; }
-        .logo { text-align: center; font-size: 1.2rem; font-weight: bold; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; }
-        nav { display: flex; flex-direction: column; }
+        #app-screen { display: none; width: 100vw; height: 100vh; flex-direction: row; overflow: hidden; }
+        
+        aside { width: 250px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; height: 100%; flex-shrink: 0; }
+        .logo { text-align: center; font-size: 1.2rem; font-weight: bold; padding: 20px 0; border-bottom: 1px solid var(--border-color); }
+        
+        nav { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-top: 10px; }
         nav button { width: 100%; background: none; border: none; padding: 15px 20px; text-align: left; font-size: 1rem; cursor: pointer; color: var(--text-color); transition: background 0.2s; display: flex; align-items: center; gap: 10px; }
         nav button:hover { background-color: var(--hover-bg); }
-        nav button.active { background-color: var(--text-color); color: var(--bg-color); }
+        nav button.active { background-color: var(--text-color); color: var(--bg-color); font-weight: bold; }
         
-        main { flex: 1; padding: 40px; overflow-y: auto; position: relative; scroll-behavior: smooth; background: var(--bg-color); }
+        #btn-logout { margin-top: auto; border-top: 1px solid var(--border-color); color: #d32f2f !important; }
+        
+        main { flex: 1; padding: 30px; overflow-y: auto; position: relative; scroll-behavior: smooth; background: var(--bg-color); }
         .view { display: none; background: var(--sidebar-bg); padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); }
         .view.active { display: block; }
         h2 { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
@@ -55,7 +61,7 @@
         .agenda-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
         .agenda-header h2 { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .date-controls { display: flex; gap: 10px; align-items: center; }
-        .date-controls button { background: var(--bg-color); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+        .date-controls button { background: var(--bg-color); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .date-controls input[type="date"] { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; }
 
         .agenda-grid { display: flex; flex-direction: column; gap: 8px; }
@@ -74,15 +80,16 @@
         .btn-acao { background: var(--text-color); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-right: 5px; margin-bottom: 5px;}
         .btn-acao.danger { background: #d32f2f; }
 
-        /* Responsividade para Tabelas */
-        .table-responsive { overflow-x: auto; width: 100%; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.95rem; min-width: 600px; }
+        /* Tabelas Responsivas */
+        .table-responsive { width: 100%; overflow-x: auto; border-radius: 6px; border: 1px solid var(--border-color); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.95rem; min-width: 600px; }
         th, td { padding: 12px; border-bottom: 1px solid var(--border-color); text-align: left; }
-        th { background-color: var(--bg-color); }
+        th { background-color: var(--bg-color); font-weight: 600; }
+        tr:last-child td { border-bottom: none; }
 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: var(--sidebar-bg); padding: 30px; border-radius: 8px; width: 95%; max-width: 500px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;}
-        .close-btn { float: right; cursor: pointer; font-size: 1.5rem; font-weight: bold; line-height: 1; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 10px; }
+        .modal-content { background: var(--sidebar-bg); padding: 25px; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
+        .close-btn { float: right; cursor: pointer; font-size: 1.5rem; font-weight: bold; line-height: 1; color: #666; }
 
         /* Dashboard & Sub-Tabs */
         .dashboard-cards { display: flex; gap: 20px; margin-bottom: 30px; }
@@ -91,7 +98,7 @@
         .card .valor { font-size: 2rem; font-weight: bold; color: var(--text-color); }
 
         .sub-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); overflow-x: auto; white-space: nowrap; padding-bottom: 5px; }
-        .sub-tab-btn { background: none; border: none; padding: 10px 15px; font-size: 1rem; cursor: pointer; border-bottom: 2px solid transparent; color: #666; }
+        .sub-tab-btn { background: none; border: none; padding: 10px 15px; font-size: 0.95rem; cursor: pointer; border-bottom: 2px solid transparent; color: #666; }
         .sub-tab-btn.active { color: var(--text-color); font-weight: bold; border-bottom: 2px solid var(--text-color); }
         .sub-tab-content { display: none; }
         .sub-tab-content.active { display: block; }
@@ -110,37 +117,40 @@
            ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS (PWA)
            ========================================= */
         @media (max-width: 768px) {
-            body { align-items: flex-start; }
-            #app-screen { flex-direction: column; }
+            body { align-items: flex-start; } /* Previne corte do login */
+            #login-screen { margin-top: 10vh; padding: 30px 20px; }
             
-            /* Sidebar vira menu horizontal no topo */
-            aside { width: 100%; padding: 10px; border-right: none; border-bottom: 1px solid var(--border-color); flex-direction: column; }
-            .logo { padding-bottom: 10px; margin-bottom: 5px; font-size: 1.1rem; }
+            /* Estrutura Principal */
+            #app-screen { flex-direction: column; height: 100dvh; }
+            aside { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border-color); padding: 0; flex-shrink: 0; }
+            .logo { padding: 15px 0; font-size: 1.1rem; border-bottom: 1px solid var(--border-color); }
             
-            nav { flex-direction: row; overflow-x: auto; padding-bottom: 5px; gap: 5px; }
-            nav button { width: auto; padding: 10px 15px; font-size: 0.9rem; white-space: nowrap; border-radius: 4px; }
-            nav button.active { border-radius: 4px; }
+            /* Menu de Navegação Horizontal */
+            nav { flex-direction: row; overflow-x: auto; padding: 10px; gap: 8px; align-items: center; border-bottom: none; }
+            nav::-webkit-scrollbar { height: 4px; }
+            nav::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+            nav button { flex: 0 0 auto; width: auto; padding: 10px 15px; font-size: 0.9rem; border-radius: 6px; border: 1px solid transparent; justify-content: center; }
+            nav button.active { border-color: var(--text-color); }
             
-            #btn-logout { align-self: flex-end; margin-top: 5px; padding: 10px !important; }
+            /* Reposiciona o botão "Sair" de forma segura no celular */
+            #btn-logout { margin-top: 0; border-top: none; border: 1px solid #ffcccc; background: #fff5f5; border-radius: 6px; }
 
-            /* Espaçamento Principal */
+            /* Ajustes de Espaçamento das Telas */
             main { padding: 15px; }
-            .view { padding: 15px; }
-            h2 { font-size: 1.3rem; }
-
-            /* Formulários em Coluna */
-            .form-row { flex-direction: column; gap: 10px; }
-            .checkbox-list label { width: 100%; }
-
-            /* Dashboard Cards empilhados */
-            .dashboard-cards { flex-direction: column; gap: 10px; }
-
-            /* Agenda ajustes para caber na tela */
+            .view { padding: 20px 15px; }
+            h2 { font-size: 1.2rem; }
+            
+            /* Agenda Mobile */
             .agenda-header { flex-direction: column; align-items: flex-start; gap: 15px; }
             .date-controls { width: 100%; justify-content: space-between; }
-            .agenda-time { width: 60px; font-size: 0.9rem; padding: 15px 5px; }
-            .agenda-slot { padding: 10px; flex-direction: column; align-items: flex-start; gap: 10px; font-size: 0.9rem; }
-            .btn-cancelar { width: 100%; padding: 8px; }
+            .agenda-time { width: 60px; font-size: 0.85rem; padding: 15px 5px; }
+            .agenda-slot { padding: 12px; font-size: 0.9rem; flex-direction: column; align-items: flex-start; gap: 10px; }
+            .btn-cancelar { width: 100%; padding: 10px; }
+            
+            /* Formulários em Coluna */
+            .form-row { flex-direction: column; gap: 12px; margin-bottom: 12px; }
+            .checkbox-list label { width: 100%; }
+            .dashboard-cards { flex-direction: column; gap: 12px; }
         }
     </style>
 </head>
@@ -157,15 +167,16 @@
     <div id="app-screen">
         <aside>
             <div class="logo">Lumina's Estética</div>
-            <nav>
+            <nav id="main-nav">
                 <button onclick="changeView('agenda')" id="menu-agenda" class="menu-item active">📅 Agenda</button>
                 <button onclick="changeView('pacientes')" id="menu-pacientes" class="menu-item">👥 Pacientes</button>
                 <button onclick="changeView('procedimentos')" id="menu-procedimentos" class="menu-item">✨ Procedimentos</button>
                 <button onclick="changeView('documentos')" id="menu-documentos" class="menu-item">📄 Documentos</button>
-                <button onclick="changeView('profissionais')" id="menu-profissionais" class="menu-item">👩‍⚕️ Profissinais</button>
-                <button onclick="changeView('configuracoes')" id="menu-configuracoes" class="menu-item">⚙️ Config.</button>
+                <button onclick="changeView('profissionais')" id="menu-profissionais" class="menu-item">👩‍⚕️ Profissionais</button>
+                <button onclick="changeView('configuracoes')" id="menu-configuracoes" class="menu-item">⚙️ Configurações</button>
+                <!-- Botão Sair reposicionado dentro do NAV para rolar junto no mobile -->
+                <button id="btn-logout" onclick="fazerLogout()">🚪 Sair</button>
             </nav>
-            <button id="btn-logout" onclick="fazerLogout()" style="color: #666; background: none; border: none; padding: 15px; cursor: pointer;">🚪 Sair</button>
         </aside>
 
         <main id="main-content">
@@ -288,7 +299,7 @@
                     
                     <button class="btn-primary" id="btn-salvar-anamnese" style="display: none; width: 100%; max-width: 300px; padding: 10px;" onclick="salvarAnamnese()">💾 Salvar Anamnese</button>
 
-                    <h3 style="margin-top: 50px; margin-bottom: 10px;">📋 Histórico de Anamneses Salvas</h3>
+                    <h3 style="margin-top: 50px; margin-bottom: 10px;">📋 Histórico de Anamneses</h3>
                     <div class="table-responsive">
                         <table>
                             <thead><tr><th>Data</th><th>Paciente</th><th>Procedimento</th><th>Ações</th></tr></thead>
@@ -382,7 +393,7 @@
                 <datalist id="lista-pacientes"></datalist>
             </div>
             <div class="input-group">
-                <label>WhatsApp (Se paciente novo)</label>
+                <label>WhatsApp (Se novo paciente)</label>
                 <input type="tel" id="modal-paciente-whatsapp" placeholder="(Opcional)">
             </div>
             <div class="input-group">
@@ -402,17 +413,6 @@
             <div id="view-anamnese-respostas" style="background: var(--bg-color); padding: 15px; border-radius: 6px; font-size: 0.9rem;"></div>
         </div>
     </div>
-
-    <!-- SCRIPT DE REGISTRO DO SERVICE WORKER (PWA) -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then((reg) => console.log('PWA Service Worker Registrado!', reg))
-                    .catch((err) => console.log('Falha ao registrar PWA Service Worker', err));
-            });
-        }
-    </script>
 
     <script>
         let HORARIOS_AGENDA = [];
@@ -497,8 +497,6 @@
             document.getElementById(viewId).classList.add('active');
             document.getElementById('menu-' + viewId).classList.add('active');
             if(viewId === 'configuracoes') atualizarDashboard(); 
-            // Fechar sidebar automaticamente no celular ao clicar em um menu
-            if (window.innerWidth <= 768) { document.getElementById('main-content').scrollIntoView(); }
         }
 
         function mudarAbaDocumento(abaId, btnElement) {
