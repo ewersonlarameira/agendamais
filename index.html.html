@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina's Clínica Estética</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f4;
+            --text-color: #1a1a1a;
+            --sidebar-bg: #ffffff;
+            --border-color: #cccccc;
+            --hover-bg: #e0e0e0;
+            --input-border: #999999;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- ESTILOS DE LOGIN --- */
+        #login-screen {
+            background: var(--sidebar-bg);
+            padding: 40px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        #login-screen h1 { margin-bottom: 20px; font-size: 1.5rem; }
+
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; font-weight: bold; }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            font-size: 1rem;
+            background: #fff;
+        }
+
+        button.btn-primary {
+            width: 100%;
+            background-color: var(--text-color);
+            color: var(--sidebar-bg);
+            border: none;
+            padding: 12px;
+            font-size: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-top: 10px;
+        }
+
+        button.btn-primary:hover { opacity: 0.8; }
+        .error-msg { color: #d32f2f; font-size: 0.85rem; margin-top: 10px; display: none; }
+
+        /* --- ESTILOS DO APP PRINCIPAL --- */
+        #app-screen { display: none; width: 100%; height: 100vh; }
+        aside { width: 250px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; }
+        .logo { text-align: center; font-size: 1.2rem; font-weight: bold; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; }
+        
+        nav button { width: 100%; background: none; border: none; padding: 15px 20px; text-align: left; font-size: 1rem; cursor: pointer; color: var(--text-color); transition: background 0.2s; display: flex; align-items: center; gap: 10px; }
+        nav button:hover { background-color: var(--hover-bg); }
+        nav button.active { background-color: var(--text-color); color: var(--bg-color); }
+        
+        main { flex: 1; padding: 40px; overflow-y: auto; position: relative; }
+        
+        .view { display: none; background: var(--sidebar-bg); padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .view.active { display: block; }
+        h2 { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .form-row .input-group { flex: 1; margin-bottom: 0; }
+        
+        .checkbox-group { margin-top: 15px; border: 1px solid var(--border-color); padding: 15px; border-radius: 4px; }
+        .checkbox-group h4 { margin-bottom: 10px; }
+        .checkbox-list label { display: block; margin-bottom: 8px; cursor: pointer; }
+
+        /* Grade da Agenda */
+        .agenda-grid { border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden; }
+        .agenda-row { display: flex; border-bottom: 1px solid var(--border-color); }
+        .agenda-row:last-child { border-bottom: none; }
+        .agenda-time { width: 80px; padding: 15px; background: var(--hover-bg); font-weight: bold; text-align: center; border-right: 1px solid var(--border-color); }
+        .agenda-slot { flex: 1; padding: 15px; cursor: pointer; transition: background 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .agenda-slot:hover { background: #f9f9f9; }
+        .agenda-slot.ocupado { background: var(--text-color); color: var(--sidebar-bg); cursor: default; }
+        .btn-cancelar { background: #d32f2f; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+
+        /* Tabelas */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border-bottom: 1px solid var(--border-color); text-align: left; }
+        th { background-color: var(--bg-color); }
+
+        /* Modal de Agendamento */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--sidebar-bg); padding: 30px; border-radius: 8px; width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .close-btn { float: right; cursor: pointer; font-size: 1.5rem; font-weight: bold; line-height: 1; }
+
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE LOGIN -->
+    <div id="login-screen">
+        <h1>✨ Lumina's Estética</h1>
+        <p style="margin-bottom: 20px; color: #666; font-size: 0.9rem;">Área Restrita</p>
+        
+        <div class="input-group">
+            <label for="login-nick">Nickname</label>
+            <input type="text" id="login-nick" placeholder="Ex: admin">
+        </div>
+        <div class="input-group">
+            <label for="login-senha">Senha (8 dígitos)</label>
+            <input type="password" id="login-senha" maxlength="8" placeholder="********">
+        </div>
+        
+        <button class="btn-primary" onclick="fazerLogin()">Entrar</button>
+        <p id="login-error" class="error-msg">Credenciais inválidas. Tente admin / 12345678</p>
+    </div>
+
+    <!-- APP PRINCIPAL -->
+    <div id="app-screen">
+        <aside>
+            <div class="logo">Lumina's Estética</div>
+            <nav>
+                <button onclick="changeView('agenda')" id="menu-agenda" class="menu-item active">📅 Agenda</button>
+                <button onclick="changeView('pacientes')" id="menu-pacientes" class="menu-item">👥 Pacientes</button>
+                <button onclick="changeView('procedimentos')" id="menu-procedimentos" class="menu-item">✨ Procedimentos</button>
+                <button onclick="changeView('profissionais')" id="menu-profissionais" class="menu-item">👩‍⚕️ Profissionais</button>
+                <button onclick="changeView('configuracoes')" id="menu-configuracoes" class="menu-item">⚙️ Configurações</button>
+            </nav>
+            <button onclick="fazerLogout()" style="margin-top: auto; color: #666; background: none; border: none; padding: 15px; cursor: pointer;">🚪 Sair</button>
+        </aside>
+
+        <main>
+            <!-- VIEW AGENDA -->
+            <div id="agenda" class="view active">
+                <h2>📅 Agenda do Dia</h2>
+                <div class="agenda-grid" id="grade-agenda">
+                    <!-- Gerado via JS -->
+                </div>
+            </div>
+
+            <!-- VIEW PACIENTES -->
+            <div id="pacientes" class="view">
+                <h2>👥 Cadastro de Pacientes</h2>
+                
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Nome Completo</label>
+                        <input type="text" id="pac-nome" placeholder="Ex: Maria Oliveira">
+                    </div>
+                    <div class="input-group">
+                        <label>WhatsApp</label>
+                        <input type="text" id="pac-whatsapp" placeholder="Ex: (11) 99999-9999">
+                    </div>
+                </div>
+                <button class="btn-primary" style="width: auto; padding: 10px 30px;" onclick="salvarPaciente()">Cadastrar Paciente</button>
+
+                <h3 style="margin-top: 40px; margin-bottom: 10px;">📋 Lista de Pacientes</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>WhatsApp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-pacientes">
+                        <tr><td colspan="2" style="text-align:center; color:#666;">Nenhum paciente cadastrado ainda.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- OUTRAS VIEWS (Mantidas do código anterior) -->
+            <div id="procedimentos" class="view">
+                <h2>✨ Procedimentos</h2>
+                <p>Catálogo de serviços em breve...</p>
+            </div>
+
+            <div id="profissionais" class="view">
+                <h2>👩‍⚕️ Cadastro de Profissional</h2>
+                <div class="form-row">
+                    <div class="input-group"><label>Nome Completo</label><input type="text" id="cad-nome"></div>
+                    <div class="input-group"><label>Especialidade</label><input type="text" id="cad-especialidade"></div>
+                </div>
+                <div class="form-row">
+                    <div class="input-group"><label>Nickname de Acesso</label><input type="text" id="cad-nick"></div>
+                    <div class="input-group"><label>Senha (8 dígitos)</label><input type="text" id="cad-senha" maxlength="8"></div>
+                </div>
+                <div class="checkbox-group">
+                    <h4>Permissões de Acesso:</h4>
+                    <div class="checkbox-list">
+                        <label><input type="checkbox" id="perm-agenda" checked> 📅 Agenda</label>
+                        <label><input type="checkbox" id="perm-pacientes" checked> 👥 Pacientes</label>
+                        <label><input type="checkbox" id="perm-procedimentos"> ✨ Procedimentos</label>
+                        <label><input type="checkbox" id="perm-profissionais"> 👩‍⚕️ Profissionais</label>
+                        <label><input type="checkbox" id="perm-configuracoes"> ⚙️ Configurações</label>
+                    </div>
+                </div>
+                <button class="btn-primary" style="margin-top: 20px; width: auto; padding: 10px 30px;" onclick="salvarProfissional()">Salvar Profissional</button>
+            </div>
+
+            <div id="configuracoes" class="view">
+                <h2>⚙️ Configurações</h2>
+                <p>Configurações gerais em breve...</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL NOVO AGENDAMENTO -->
+    <div id="modal-agendamento" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-btn" onclick="fecharModal()">&times;</span>
+            <h2 style="border-bottom: none; margin-bottom: 5px;">📅 Agendar Horário</h2>
+            <p id="modal-horario" style="margin-bottom: 20px; font-weight: bold; color: #666;"></p>
+
+            <div class="input-group">
+                <label>Paciente</label>
+                <select id="modal-paciente">
+                    <option value="">Selecione um paciente...</option>
+                </select>
+                <small style="display:block; margin-top:5px; font-size:0.8rem;">*Cadastre novos pacientes no menu 'Pacientes'</small>
+            </div>
+
+            <div class="input-group">
+                <label>Procedimento (Simulação)</label>
+                <select id="modal-procedimento">
+                    <option value="Limpeza de Pele">Limpeza de Pele</option>
+                    <option value="Drenagem Linfática">Drenagem Linfática</option>
+                    <option value="Aplicação de Botox">Aplicação de Botox</option>
+                </select>
+            </div>
+
+            <button class="btn-primary" onclick="confirmarAgendamento()">Confirmar Agendamento</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. BANCOS DE DADOS (Simulação em Memória) ---
+        const usuariosDB = [{ nick: 'admin', senha: '12345678', permissoes: ['agenda', 'pacientes', 'procedimentos', 'profissionais', 'configuracoes'] }];
+        const pacientesDB = [];
+        const agendamentosDB = []; // Estrutura: { hora: '08:00', paciente: 'João', procedimento: 'Botox' }
+        let horaSelecionadaParaAgendamento = '';
+
+        // --- 2. LÓGICA DE LOGIN ---
+        function fazerLogin() {
+            const nickInput = document.getElementById('login-nick').value;
+            const senhaInput = document.getElementById('login-senha').value;
+            const usuarioLogado = usuariosDB.find(u => u.nick === nickInput && u.senha === senhaInput);
+
+            if (usuarioLogado) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.body.style.display = 'block'; 
+                document.getElementById('app-screen').style.display = 'flex';
+                document.getElementById('login-error').style.display = 'none';
+
+                aplicarPermissoes(usuarioLogado.permissoes);
+                gerarGradeAgenda();
+            } else {
+                document.getElementById('login-error').style.display = 'block';
+            }
+        }
+
+        function fazerLogout() {
+            document.body.style.display = 'flex';
+            document.getElementById('login-screen').style.display = 'block';
+            document.getElementById('app-screen').style.display = 'none';
+            document.getElementById('login-nick').value = '';
+            document.getElementById('login-senha').value = '';
+        }
+
+        function aplicarPermissoes(permissoes) {
+            ['agenda', 'pacientes', 'procedimentos', 'profissionais', 'configuracoes'].forEach(menu => {
+                const btn = document.getElementById('menu-' + menu);
+                btn.style.display = permissoes.includes(menu) ? 'flex' : 'none';
+            });
+            changeView(permissoes[0] || 'agenda');
+        }
+
+        function changeView(viewId) {
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            document.getElementById('menu-' + viewId).classList.add('active');
+        }
+
+        // --- 3. LÓGICA DE PACIENTES ---
+        function salvarPaciente() {
+            const nome = document.getElementById('pac-nome').value.trim();
+            const whatsapp = document.getElementById('pac-whatsapp').value.trim();
+
+            if(!nome) {
+                alert("O nome do paciente é obrigatório!");
+                return;
+            }
+
+            pacientesDB.push({ nome, whatsapp });
+            
+            // Limpa campos
+            document.getElementById('pac-nome').value = '';
+            document.getElementById('pac-whatsapp').value = '';
+            
+            atualizarListaPacientes();
+            alert("Paciente cadastrado com sucesso!");
+        }
+
+        function atualizarListaPacientes() {
+            // Atualiza a tabela na tela de Pacientes
+            const tbody = document.getElementById('tabela-pacientes');
+            tbody.innerHTML = '';
+
+            if (pacientesDB.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#666;">Nenhum paciente cadastrado ainda.</td></tr>`;
+            } else {
+                pacientesDB.forEach(paciente => {
+                    tbody.innerHTML += `<tr><td>${paciente.nome}</td><td>${paciente.whatsapp || '-'}</td></tr>`;
+                });
+            }
+
+            // Atualiza o menu Dropdown no Modal de Agendamento
+            const selectPaciente = document.getElementById('modal-paciente');
+            selectPaciente.innerHTML = '<option value="">Selecione um paciente...</option>';
+            pacientesDB.forEach(paciente => {
+                selectPaciente.innerHTML += `<option value="${paciente.nome}">${paciente.nome}</option>`;
+            });
+        }
+
+        // --- 4. LÓGICA DA AGENDA E MODAL ---
+        function gerarGradeAgenda() {
+            const container = document.getElementById('grade-agenda');
+            container.innerHTML = ''; 
+            const horas = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+            
+            horas.forEach(hora => {
+                const row = document.createElement('div');
+                row.className = 'agenda-row';
+
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'agenda-time';
+                timeDiv.textContent = hora;
+
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'agenda-slot';
+                
+                // Verifica se existe agendamento salvo para este horário
+                const agendamento = agendamentosDB.find(a => a.hora === hora);
+
+                if (hora === '12:00') {
+                    slotDiv.textContent = 'Almoço (Bloqueado)';
+                    slotDiv.classList.add('ocupado');
+                } else if (agendamento) {
+                    // Horário Ocupado
+                    slotDiv.innerHTML = `<span>👥 <b>${agendamento.paciente}</b> - ${agendamento.procedimento}</span>`;
+                    slotDiv.classList.add('ocupado');
+                    
+                    // Botão de cancelar
+                    const btnCancelar = document.createElement('button');
+                    btnCancelar.className = 'btn-cancelar';
+                    btnCancelar.textContent = 'Cancelar';
+                    btnCancelar.onclick = (e) => cancelarAgendamento(hora, e);
+                    slotDiv.appendChild(btnCancelar);
+                } else {
+                    // Horário Livre
+                    slotDiv.textContent = 'Livre - Clique para agendar';
+                    slotDiv.onclick = () => abrirModalAgendamento(hora);
+                }
+
+                row.appendChild(timeDiv);
+                row.appendChild(slotDiv);
+                container.appendChild(row);
+            });
+        }
+
+        function abrirModalAgendamento(hora) {
+            horaSelecionadaParaAgendamento = hora;
+            document.getElementById('modal-horario').textContent = `Horário Selecionado: ${hora}`;
+            document.getElementById('modal-agendamento').style.display = 'flex';
+        }
+
+        function fecharModal() {
+            document.getElementById('modal-agendamento').style.display = 'none';
+            document.getElementById('modal-paciente').value = '';
+        }
+
+        function confirmarAgendamento() {
+            const paciente = document.getElementById('modal-paciente').value;
+            const procedimento = document.getElementById('modal-procedimento').value;
+
+            if(!paciente) {
+                alert("Por favor, selecione um paciente. Se não houver, cadastre-o primeiro no menu Pacientes.");
+                return;
+            }
+
+            agendamentosDB.push({
+                hora: horaSelecionadaParaAgendamento,
+                paciente: paciente,
+                procedimento: procedimento
+            });
+
+            fecharModal();
+            gerarGradeAgenda(); // Recarrega a grade para mostrar o horário ocupado
+        }
+
+        function cancelarAgendamento(hora, event) {
+            event.stopPropagation(); // Evita que clique no botão também ative o clique da div inteira
+            if(confirm(`Tem certeza que deseja cancelar o agendamento das ${hora}?`)) {
+                const index = agendamentosDB.findIndex(a => a.hora === hora);
+                if (index > -1) {
+                    agendamentosDB.splice(index, 1);
+                    gerarGradeAgenda(); // Recarrega a grade
+                }
+            }
+        }
+    </script>
+</body>
+</html>
