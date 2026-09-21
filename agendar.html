@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamento - Lumina's Clínica Estética</title>
+    <!-- Supabase e Config -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #fafafa;
+            --text-color: #1a1a1a;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --primary: #1a1a1a;
+            --primary-hover: #333333;
+            --success: #4CAF50;
+            --whatsapp: #25D366;
+            --google: #4285F4;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
+        body { background-color: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; padding: 20px; min-height: 100vh; }
+
+        .container { width: 100%; max-width: 500px; margin-top: 20px; }
+        
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { font-size: 1.5rem; letter-spacing: -0.5px; margin-bottom: 5px; }
+        .header p { color: #666; font-size: 0.9rem; }
+
+        .step-card { background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 20px rgba(0,0,0,0.05); display: none; animation: fadeIn 0.3s ease; }
+        .step-card.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { font-size: 1.2rem; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 8px; font-size: 0.9rem; font-weight: bold; }
+        .input-group input, .input-group select { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; background: #fff; font-family: inherit; transition: border 0.2s; }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--primary); }
+
+        .time-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .time-slot { background: #f0f0f0; border: 1px solid var(--border-color); padding: 12px 0; text-align: center; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+        .time-slot:hover { background: #e4e4e4; }
+        .time-slot.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .time-slot.disabled { background: #f9f9f9; color: #ccc; cursor: not-allowed; text-decoration: line-through; }
+
+        button.btn-primary { width: 100%; background-color: var(--primary); color: #fff; border: none; padding: 15px; font-size: 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; transition: opacity 0.2s; margin-top: 10px; }
+        button.btn-primary:hover { opacity: 0.8; }
+        button.btn-secondary { width: 100%; background-color: transparent; color: #666; border: 1px solid var(--border-color); padding: 12px; font-size: 0.9rem; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+        
+        .btn-whatsapp { background-color: var(--whatsapp) !important; color: white !important; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-google { background-color: var(--google) !important; color: white !important; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+        .loader { text-align: center; padding: 20px; color: #666; font-style: italic; display: none; }
+        
+        .success-icon { font-size: 4rem; text-align: center; display: block; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>✨ Lumina's Estética</h1>
+            <p>Agendamento Online Rápido</p>
+        </div>
+
+        <!-- PASSO 1: PROCEDIMENTO -->
+        <div id="step-1" class="step-card active">
+            <h2>1. O que vamos realizar?</h2>
+            <div class="input-group">
+                <label>Selecione o Procedimento</label>
+                <select id="select-procedimento">
+                    <option value="">Carregando procedimentos...</option>
+                </select>
+            </div>
+            <button class="btn-primary" onclick="irParaPasso2()">Continuar</button>
+        </div>
+
+        <!-- PASSO 2: DATA E HORA -->
+        <div id="step-2" class="step-card">
+            <h2>2. Escolha o melhor momento</h2>
+            <div class="input-group">
+                <label>Data</label>
+                <input type="date" id="input-data" onchange="carregarHorarios()">
+            </div>
+            <div class="input-group" id="container-horarios" style="display: none;">
+                <label>Horários Disponíveis</label>
+                <div id="loader-horarios" class="loader">Buscando horários...</div>
+                <div class="time-grid" id="grid-horarios"></div>
+            </div>
+            <button class="btn-primary" id="btn-passo-3" style="display: none;" onclick="irParaPasso3()">Continuar</button>
+            <button class="btn-secondary" onclick="voltarPasso('step-1')">Voltar</button>
+        </div>
+
+        <!-- PASSO 3: DADOS DO PACIENTE -->
+        <div id="step-3" class="step-card">
+            <h2>3. Seus Dados</h2>
+            <p style="margin-bottom: 20px; font-size: 0.9rem; color: #666;">Para finalizarmos, informe seus dados de contato.</p>
+            <div class="input-group">
+                <label>Nome Completo</label>
+                <input type="text" id="input-nome" placeholder="Digite seu nome">
+            </div>
+            <div class="input-group">
+                <label>WhatsApp</label>
+                <input type="tel" id="input-whatsapp" placeholder="(XX) XXXXX-XXXX">
+            </div>
+            <button class="btn-primary" id="btn-finalizar" onclick="finalizarAgendamento()">Confirmar Agendamento</button>
+            <button class="btn-secondary" onclick="voltarPasso('step-2')">Voltar</button>
+        </div>
+
+        <!-- PASSO 4: SUCESSO -->
+        <div id="step-4" class="step-card" style="text-align: center;">
+            <span class="success-icon">✅</span>
+            <h2 style="border: none; margin-bottom: 10px;">Tudo certo!</h2>
+            <p style="color: #666; margin-bottom: 25px;">Seu horário foi reservado com sucesso.</p>
+            
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; text-align: left; margin-bottom: 25px; font-size: 0.95rem;">
+                <p><strong>Procedimento:</strong> <span id="resumo-proc"></span></p>
+                <p><strong>Data:</strong> <span id="resumo-data"></span></p>
+                <p><strong>Hora:</strong> <span id="resumo-hora"></span></p>
+            </div>
+
+            <button class="btn-primary btn-whatsapp" onclick="enviarWhatsApp()">📱 Avisar Clínica no WhatsApp</button>
+            <button class="btn-primary btn-google" onclick="adicionarGoogleAgenda()">📅 Salvar no Google Agenda</button>
+        </div>
+
+    </div>
+
+    <script>
+        // Configurações Padrões da Clínica (Usadas se não houver no banco)
+        const HORARIO_ABERTURA = 8;
+        const HORARIO_FECHAMENTO = 18;
+        const HORARIO_ALMOCO = "12:00";
+        const CLINICA_WHATSAPP = "5524999845210";
+
+        let procedimentosAtivos = [];
+        let procedimentoEscolhido = null;
+        let dataEscolhida = '';
+        let horaEscolhida = '';
+        let todosHorariosDoDia = [];
+
+        // Inicializa bloqueando datas passadas
+        const hojeIso = new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        document.getElementById('input-data').setAttribute('min', hojeIso);
+
+        // 1. Carregar Procedimentos do Supabase
+        async function carregarProcedimentos() {
+            const select = document.getElementById('select-procedimento');
+            const { data, error } = await supabaseClient
+                .from('procedimentos')
+                .select('*')
+                .eq('status', 'Ativo')
+                .order('nome');
+
+            if (error) {
+                select.innerHTML = '<option value="">Erro ao carregar serviços</option>';
+                return;
+            }
+
+            procedimentosAtivos = data;
+            select.innerHTML = '<option value="">Escolha um procedimento...</option>';
+            procedimentosAtivos.forEach(proc => {
+                select.innerHTML += `<option value="${proc.id}">${proc.nome} (${proc.duracao} min)</option>`;
+            });
+        }
+
+        carregarProcedimentos();
+
+        // NAVEGAÇÃO
+        function irParaPasso2() {
+            const procId = document.getElementById('select-procedimento').value;
+            if (!procId) return alert("Selecione um procedimento para continuar.");
+            
+            procedimentoEscolhido = procedimentosAtivos.find(p => p.id === procId);
+            mudarAba('step-2');
+        }
+
+        function irParaPasso3() {
+            if (!dataEscolhida || !horaEscolhida) return alert("Selecione uma data e um horário.");
+            mudarAba('step-3');
+        }
+
+        function voltarPasso(stepId) { mudarAba(stepId); }
+
+        function mudarAba(id) {
+            document.querySelectorAll('.step-card').forEach(card => card.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // 2. Lógica de Horários
+        async function carregarHorarios() {
+            dataEscolhida = document.getElementById('input-data').value;
+            if (!dataEscolhida) return;
+
+            document.getElementById('container-horarios').style.display = 'block';
+            document.getElementById('loader-horarios').style.display = 'block';
+            document.getElementById('grid-horarios').innerHTML = '';
+            document.getElementById('btn-passo-3').style.display = 'none';
+            horaEscolhida = '';
+
+            // Busca agendamentos do dia
+            const { data: agendamentos } = await supabaseClient
+                .from('agendamentos')
+                .select('*')
+                .eq('data_agendamento', dataEscolhida);
+
+            const grid = document.getElementById('grid-horarios');
+            const blocosNecessarios = Math.ceil(procedimentoEscolhido.duracao / 60);
+
+            // Gera a grade de horários base
+            let horariosBase = [];
+            for (let i = HORARIO_ABERTURA; i <= HORARIO_FECHAMENTO; i++) {
+                horariosBase.push((i < 10 ? '0' + i : i) + ':00');
+            }
+
+            horariosBase.forEach((hora, index) => {
+                const btn = document.createElement('div');
+                btn.className = 'time-slot';
+                btn.textContent = hora;
+
+                // Regras de Bloqueio
+                let isBloqueado = false;
+
+                // Regra 1: Horário de Almoço
+                if (hora === HORARIO_ALMOCO) isBloqueado = true;
+
+                // Regra 2: Se for hoje, bloqueia horários que já passaram
+                if (dataEscolhida === hojeIso) {
+                    const horaAtual = new Date().getHours();
+                    if (parseInt(hora.split(':')[0]) <= horaAtual) isBloqueado = true;
+                }
+
+                // Regra 3: Verifica se o próprio horário está ocupado no banco
+                const ocupado = agendamentos.find(a => a.hora === hora);
+                if (ocupado) isBloqueado = true;
+
+                // Regra 4: Para procedimentos > 60 min, verifica se os blocos seguintes estão livres
+                if (!isBloqueado && blocosNecessarios > 1) {
+                    for (let i = 1; i < blocosNecessarios; i++) {
+                        const proximaHora = horariosBase[index + i];
+                        if (!proximaHora || proximaHora === HORARIO_ALMOCO) { isBloqueado = true; break; }
+                        
+                        const proximoOcupado = agendamentos.find(a => a.hora === proximaHora);
+                        if (proximoOcupado) { isBloqueado = true; break; }
+                    }
+                }
+
+                if (isBloqueado) {
+                    btn.classList.add('disabled');
+                } else {
+                    btn.onclick = () => selecionarHora(hora, btn);
+                }
+
+                grid.appendChild(btn);
+            });
+
+            document.getElementById('loader-horarios').style.display = 'none';
+        }
+
+        function selecionarHora(hora, elemento) {
+            document.querySelectorAll('.time-slot').forEach(el => el.classList.remove('selected'));
+            elemento.classList.add('selected');
+            horaEscolhida = hora;
+            document.getElementById('btn-passo-3').style.display = 'block';
+        }
+
+        // 3. Finalizar Agendamento
+        async function finalizarAgendamento() {
+            const nome = document.getElementById('input-nome').value.trim();
+            const whatsapp = document.getElementById('input-whatsapp').value.trim();
+
+            if (!nome || !whatsapp) return alert("Por favor, preencha seu nome e WhatsApp.");
+
+            document.getElementById('btn-finalizar').textContent = 'Processando...';
+            document.getElementById('btn-finalizar').disabled = true;
+
+            // 1. Cadastra/Verifica Paciente
+            const { data: pacienteExiste } = await supabaseClient.from('pacientes').select('*').ilike('nome', nome).single();
+            if (!pacienteExiste) {
+                await supabaseClient.from('pacientes').insert([{ nome, whatsapp }]);
+            }
+
+            // 2. Cria Blocos de Agendamento
+            const idAgrupador = Date.now();
+            const blocosNecessarios = Math.ceil(procedimentoEscolhido.duracao / 60);
+            let agendamentosParaInserir = [];
+            
+            const horaInicialInt = parseInt(horaEscolhida.split(':')[0]);
+
+            for(let i = 0; i < blocosNecessarios; i++) {
+                let horaBloco = (horaInicialInt + i);
+                let horaBlocoStr = (horaBloco < 10 ? '0' + horaBloco : horaBloco) + ':00';
+                
+                agendamentosParaInserir.push({
+                    id_agrupador: idAgrupador,
+                    data_agendamento: dataEscolhida,
+                    hora: horaBlocoStr,
+                    paciente_nome: nome,
+                    procedimento_nome: procedimentoEscolhido.nome,
+                    is_continuacao: i > 0
+                });
+            }
+
+            const { error } = await supabaseClient.from('agendamentos').insert(agendamentosParaInserir);
+
+            if (error) {
+                alert("Desculpe, ocorreu um erro. O horário pode ter sido preenchido.");
+                document.getElementById('btn-finalizar').textContent = 'Confirmar Agendamento';
+                document.getElementById('btn-finalizar').disabled = false;
+                return;
+            }
+
+            // Sucesso
+            preencherResumo(nome);
+            mudarAba('step-4');
+        }
+
+        function preencherResumo(nome) {
+            const partesData = dataEscolhida.split('-');
+            const dataFormatada = `${partesData[2]}/${partesData[1]}/${partesData[0]}`;
+            
+            document.getElementById('resumo-proc').textContent = procedimentoEscolhido.nome;
+            document.getElementById('resumo-data').textContent = dataFormatada;
+            document.getElementById('resumo-hora').textContent = horaEscolhida;
+        }
+
+        // 4. Integrações
+        function enviarWhatsApp() {
+            const nome = document.getElementById('input-nome').value.trim();
+            const whatsPaciente = document.getElementById('input-whatsapp').value.trim();
+            const partesData = dataEscolhida.split('-');
+            const dataFormatada = `${partesData[2]}/${partesData[1]}/${partesData[0]}`;
+            
+            const mensagem = `Olá, clínica Lumina's! Acabei de realizar um agendamento pelo aplicativo.\n\n*Meus Dados:*\n👤 Nome: ${nome}\n📱 Contato: ${whatsPaciente}\n\n*Detalhes do Agendamento:*\n✨ Procedimento: ${procedimentoEscolhido.nome}\n📅 Data: ${dataFormatada}\n⏰ Horário: ${horaEscolhida}\n\nAguardando confirmação!`;
+            
+            const url = `https://wa.me/${CLINICA_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
+            window.open(url, '_blank');
+        }
+
+        function adicionarGoogleAgenda() {
+            const partesData = dataEscolhida.split('-'); // YYYY, MM, DD
+            const dataFormatada = `${partesData[0]}${partesData[1]}${partesData[2]}`; // YYYYMMDD
+            
+            const horaInicialInt = parseInt(horaEscolhida.split(':')[0]);
+            const horaFinalInt = horaInicialInt + Math.ceil(procedimentoEscolhido.duracao / 60);
+            
+            const horaInicioGoogle = (horaInicialInt < 10 ? '0'+horaInicialInt : horaInicialInt) + "0000";
+            const horaFimGoogle = (horaFinalInt < 10 ? '0'+horaFinalInt : horaFinalInt) + "0000";
+
+            // Horário de Brasília é UTC-3. Formatando string:
+            const dataInicioFormatada = `${dataFormatada}T${horaInicioGoogle}`;
+            const dataFimFormatada = `${dataFormatada}T${horaFimGoogle}`;
+
+            const titulo = encodeURIComponent(`Lumina's Clínica: ${procedimentoEscolhido.nome}`);
+            const detalhes = encodeURIComponent(`Agendamento confirmado na Lumina's Clínica Estética.`);
+            
+            // Link de template do Google Calendar
+            const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titulo}&dates=${dataInicioFormatada}/${dataFimFormatada}&details=${detalhes}&ctz=America/Sao_Paulo`;
+            window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>
