@@ -32,7 +32,7 @@
         nav button:hover { background-color: var(--hover-bg); }
         nav button.active { background-color: var(--text-color); color: var(--bg-color); }
         
-        main { flex: 1; padding: 40px; overflow-y: auto; position: relative; }
+        main { flex: 1; padding: 40px; overflow-y: auto; position: relative; scroll-behavior: smooth; }
         .view { display: none; background: var(--sidebar-bg); padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); }
         .view.active { display: block; }
         h2 { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
@@ -86,9 +86,6 @@
         .sub-tab-btn.active { color: var(--text-color); font-weight: bold; border-bottom: 2px solid var(--text-color); }
         .sub-tab-content { display: none; }
         .sub-tab-content.active { display: block; }
-        
-        .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background: #e0e0e0; color: #333; }
-        .badge.ativo { background: #4CAF50; color: white; }
     </style>
 </head>
 <body>
@@ -115,7 +112,7 @@
             <button onclick="fazerLogout()" style="margin-top: auto; color: #666; background: none; border: none; padding: 15px; cursor: pointer;">🚪 Sair</button>
         </aside>
 
-        <main>
+        <main id="main-content">
             <!-- AGENDA -->
             <div id="agenda" class="view active">
                 <div class="agenda-header">
@@ -141,9 +138,11 @@
                 <table><thead><tr><th>Nome</th><th>WhatsApp</th></tr></thead><tbody id="tabela-pacientes"></tbody></table>
             </div>
 
-            <!-- PROCEDIMENTOS (COMPLETO) -->
+            <!-- PROCEDIMENTOS (COM LIXEIRA E EDIÇÃO) -->
             <div id="procedimentos" class="view">
                 <h2>✨ Catálogo de Procedimentos</h2>
+                <input type="hidden" id="proc-id-edit">
+                
                 <div class="form-row">
                     <div class="input-group"><label>Nome do Serviço</label><input type="text" id="proc-nome" placeholder="Ex: Peeling de Diamante"></div>
                     <div class="input-group"><label>Categoria</label>
@@ -185,13 +184,22 @@
                     </div>
                 </div>
                 
-                <button class="btn-primary" style="width: auto; padding: 10px 30px;" onclick="salvarProcedimento()">Salvar Procedimento</button>
+                <button class="btn-primary" id="btn-salvar-proc" style="width: auto; padding: 10px 30px;" onclick="salvarProcedimento()">Salvar Procedimento</button>
+                <button class="btn-primary" id="btn-cancelar-edit-proc" style="display:none; background:#999; margin-left: 10px; width: auto; padding: 10px 30px;" onclick="cancelarEdicaoProcedimento()">Cancelar Edição</button>
                 
-                <h3 style="margin-top: 40px; margin-bottom: 10px;">📋 Serviços Cadastrados</h3>
+                <h3 style="margin-top: 40px; margin-bottom: 10px;">📋 Serviços Ativos</h3>
                 <div style="overflow-x: auto;">
                     <table>
-                        <thead><tr><th>Status</th><th>Categoria</th><th>Procedimento</th><th>Duração</th><th>Valor</th></tr></thead>
-                        <tbody id="tabela-procedimentos"></tbody>
+                        <thead><tr><th>Categoria</th><th>Procedimento</th><th>Duração</th><th>Valor</th><th>Ações</th></tr></thead>
+                        <tbody id="tabela-procedimentos-ativos"></tbody>
+                    </table>
+                </div>
+
+                <h3 style="margin-top: 40px; margin-bottom: 10px; color: #d32f2f;">🗑️ Lixeira (Inativos)</h3>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead><tr><th>Categoria</th><th>Procedimento</th><th>Duração</th><th>Valor</th><th>Ações</th></tr></thead>
+                        <tbody id="tabela-procedimentos-inativos"></tbody>
                     </table>
                 </div>
             </div>
@@ -450,11 +458,11 @@
             if(!pacienteExiste) { await salvarPaciente(pacienteNome, pacienteWhats); }
 
             const procDetalhes = procedimentosGlobais.find(p => p.nome === procedimentoNome);
-            const duracao = procDetalhes ? procDetalhes.duracao : 60; // Duração em Minutos
+            const duracao = procDetalhes ? procDetalhes.duracao : 60; 
             const idAgrupador = Date.now(); 
 
             let agendamentosParaInserir = [];
-            const blocosNecessarios = Math.ceil(duracao / 60); // Se for 90/120m, precisa de 2 blocos.
+            const blocosNecessarios = Math.ceil(duracao / 60); 
             const indexAtual = HORARIOS_AGENDA.indexOf(horaSelecionadaParaAgendamento);
 
             for(let i = 0; i < blocosNecessarios; i++) {
@@ -524,8 +532,9 @@
             }
         }
 
-        // --- SALVAMENTO E ATUALIZAÇÃO AMPLIADA DOS PROCEDIMENTOS ---
+        // --- SALVAMENTO E ATUALIZAÇÃO AMPLIADA DOS PROCEDIMENTOS (LIXEIRA E EDIÇÃO) ---
         async function salvarProcedimento() {
+            const idEdit = document.getElementById('proc-id-edit').value;
             const nome = document.getElementById('proc-nome').value.trim();
             const categoria = document.getElementById('proc-categoria').value;
             const status = document.getElementById('proc-status').value;
@@ -540,40 +549,98 @@
 
             if(!nome) return alert("Nome do procedimento obrigatório!");
 
-            const { error } = await supabaseClient.from('procedimentos').insert([{ 
-                nome, categoria, status, duracao, valor, especialidade, descricao, beneficios, cuidados_pos, retorno, observacao_preco 
-            }]);
+            const payload = { nome, categoria, status, duracao, valor, especialidade, descricao, beneficios, cuidados_pos, retorno, observacao_preco };
+
+            if(idEdit) {
+                const { error } = await supabaseClient.from('procedimentos').update(payload).eq('id', idEdit);
+                if(error) return alert("Erro ao atualizar procedimento.");
+                alert("Procedimento atualizado com sucesso!");
+            } else {
+                const { error } = await supabaseClient.from('procedimentos').insert([payload]);
+                if(error) return alert("Erro ao salvar procedimento.");
+                alert("Procedimento salvo com sucesso!");
+            }
             
-            if(error) return alert("Erro ao salvar procedimento.");
-            
-            // Limpa o form
-            document.querySelectorAll('#procedimentos input[type="text"], #procedimentos input[type="number"], #procedimentos textarea').forEach(el => el.value = '');
+            cancelarEdicaoProcedimento();
             await atualizarListaProcedimentos();
-            alert("Procedimento salvo com sucesso!");
+        }
+
+        function prepararEdicaoProcedimento(id) {
+            const proc = procedimentosGlobais.find(p => p.id === id);
+            if(!proc) return;
+            
+            document.getElementById('proc-id-edit').value = proc.id;
+            document.getElementById('proc-nome').value = proc.nome;
+            document.getElementById('proc-categoria').value = proc.categoria || 'Outros';
+            document.getElementById('proc-status').value = proc.status || 'Ativo';
+            document.getElementById('proc-duracao').value = proc.duracao || 60;
+            document.getElementById('proc-valor').value = proc.valor || 0;
+            document.getElementById('proc-especialidade').value = proc.especialidade || '';
+            document.getElementById('proc-descricao').value = proc.descricao || '';
+            document.getElementById('proc-beneficios').value = proc.beneficios || '';
+            document.getElementById('proc-cuidados').value = proc.cuidados_pos || '';
+            document.getElementById('proc-retorno').value = proc.retorno || '';
+            document.getElementById('proc-obs-preco').value = proc.observacao_preco || '';
+
+            document.getElementById('btn-salvar-proc').textContent = "Atualizar Procedimento";
+            document.getElementById('btn-cancelar-edit-proc').style.display = "inline-block";
+            
+            // Rola a tela suavemente para o topo do formulário
+            document.getElementById('main-content').scrollTo(0, 0);
+        }
+
+        function cancelarEdicaoProcedimento() {
+            document.getElementById('proc-id-edit').value = '';
+            document.querySelectorAll('#procedimentos input[type="text"], #procedimentos input[type="number"], #procedimentos textarea').forEach(el => el.value = '');
+            document.getElementById('proc-categoria').value = 'Avaliações';
+            document.getElementById('proc-status').value = 'Ativo';
+            document.getElementById('proc-duracao').value = '60';
+            
+            document.getElementById('btn-salvar-proc').textContent = "Salvar Procedimento";
+            document.getElementById('btn-cancelar-edit-proc').style.display = "none";
+        }
+
+        async function alterarStatusProcedimento(id, restaurar) {
+            const novoStatus = restaurar ? 'Ativo' : 'Inativo';
+            if(!restaurar && !confirm("Deseja mover este procedimento para a lixeira?")) return;
+
+            await supabaseClient.from('procedimentos').update({ status: novoStatus }).eq('id', id);
+            await atualizarListaProcedimentos();
         }
 
         async function atualizarListaProcedimentos() {
             const { data } = await supabaseClient.from('procedimentos').select('*').order('categoria');
             procedimentosGlobais = data || [];
             
-            const tbody = document.getElementById('tabela-procedimentos');
+            const tbodyAtivos = document.getElementById('tabela-procedimentos-ativos');
+            const tbodyInativos = document.getElementById('tabela-procedimentos-inativos');
             const selectProcedimento = document.getElementById('modal-procedimento');
-            tbody.innerHTML = ''; selectProcedimento.innerHTML = '<option value="">Selecione...</option>';
+            
+            tbodyAtivos.innerHTML = ''; 
+            tbodyInativos.innerHTML = '';
+            selectProcedimento.innerHTML = '<option value="">Selecione...</option>';
             
             if (procedimentosGlobais.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#666;">Nenhum procedimento.</td></tr>`;
+                tbodyAtivos.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#666;">Nenhum procedimento.</td></tr>`;
             } else {
                 procedimentosGlobais.forEach(proc => {
-                    const statusClass = proc.status === 'Ativo' ? 'ativo' : '';
-                    tbody.innerHTML += `<tr>
-                        <td><span class="badge ${statusClass}">${proc.status || 'Ativo'}</span></td>
+                    const rowHtml = `<tr>
                         <td>${proc.categoria || '-'}</td>
                         <td><strong>${proc.nome}</strong></td>
                         <td>${proc.duracao} Min</td>
                         <td>R$ ${proc.valor.toFixed(2)}</td>
+                        <td>__BOTOES__</td>
                     </tr>`;
-                    // Só lista ativos para agendamento
-                    if(proc.status !== 'Inativo') {
+
+                    if (proc.status === 'Inativo') {
+                        let botoes = `<button class="btn-acao" onclick="alterarStatusProcedimento('${proc.id}', true)">♻️ Restaurar</button>`;
+                        tbodyInativos.innerHTML += rowHtml.replace('__BOTOES__', botoes);
+                    } else {
+                        let botoes = `<button class="btn-acao" onclick="prepararEdicaoProcedimento('${proc.id}')">✏️ Editar</button>
+                                      <button class="btn-acao danger" onclick="alterarStatusProcedimento('${proc.id}', false)">🗑️ Lixeira</button>`;
+                        tbodyAtivos.innerHTML += rowHtml.replace('__BOTOES__', botoes);
+                        
+                        // Adiciona ao dropdown de agendamento apenas os ativos
                         selectProcedimento.innerHTML += `<option value="${proc.nome}">${proc.nome} (${proc.duracao}m - R$${proc.valor})</option>`;
                     }
                 });
@@ -640,6 +707,7 @@
             });
             document.getElementById('btn-salvar-prof').textContent = "Atualizar Profissional";
             document.getElementById('btn-cancelar-edit').style.display = "inline-block";
+            document.getElementById('main-content').scrollTo(0, 0);
         }
 
         function cancelarEdicaoProfissional() {
