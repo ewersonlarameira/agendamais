@@ -12,6 +12,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-color); height: 100vh; display: flex; justify-content: center; align-items: center; }
 
+        /* Login */
         #login-screen { background: var(--sidebar-bg); padding: 40px; border-radius: 8px; border: 1px solid var(--border-color); width: 100%; max-width: 400px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         #login-screen h1 { margin-bottom: 20px; font-size: 1.5rem; }
         .input-group { margin-bottom: 15px; text-align: left; }
@@ -22,6 +23,7 @@
         button.btn-primary:hover { opacity: 0.8; }
         .error-msg { color: #d32f2f; font-size: 0.85rem; margin-top: 10px; display: none; }
 
+        /* App Principal e Menu */
         #app-screen { display: none; width: 100%; height: 100vh; }
         aside { width: 250px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px 0; }
         .logo { text-align: center; font-size: 1.2rem; font-weight: bold; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); margin-bottom: 10px; }
@@ -38,16 +40,16 @@
         .form-row .input-group { flex: 1; margin-bottom: 0; }
         .checkbox-group { margin-top: 15px; border: 1px solid var(--border-color); padding: 15px; border-radius: 4px; }
         .checkbox-group h4 { margin-bottom: 10px; }
-        .checkbox-list label { display: block; margin-bottom: 8px; cursor: pointer; }
+        .checkbox-list { display: flex; flex-wrap: wrap; gap: 10px; }
+        .checkbox-list label { display: block; cursor: pointer; width: 45%; margin-bottom: 5px; }
 
-        /* Controles da Agenda */
+        /* Agenda */
         .agenda-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
         .agenda-header h2 { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .date-controls { display: flex; gap: 10px; align-items: center; }
         .date-controls button { background: var(--bg-color); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 4px; cursor: pointer; }
         .date-controls input[type="date"] { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; }
 
-        /* Grade Visual Colorida da Agenda */
         .agenda-grid { display: flex; flex-direction: column; gap: 8px; }
         .agenda-row { display: flex; align-items: center; }
         .agenda-time { width: 80px; padding: 15px 0; font-weight: bold; text-align: center; }
@@ -72,11 +74,18 @@
         .modal-content { background: var(--sidebar-bg); padding: 30px; border-radius: 8px; width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .close-btn { float: right; cursor: pointer; font-size: 1.5rem; font-weight: bold; line-height: 1; }
 
-        /* Dashboard Cards */
+        /* Dashboard & Sub-Tabs */
         .dashboard-cards { display: flex; gap: 20px; margin-bottom: 30px; }
         .card { flex: 1; background: var(--hover-bg); padding: 20px; border-radius: 8px; text-align: center; }
         .card h3 { margin-bottom: 10px; font-size: 1rem; color: #666; }
         .card .valor { font-size: 2rem; font-weight: bold; color: var(--text-color); }
+
+        /* Abas Internas (Documentos) */
+        .sub-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); overflow-x: auto; }
+        .sub-tab-btn { background: none; border: none; padding: 10px 15px; font-size: 1rem; cursor: pointer; border-bottom: 2px solid transparent; color: #666; white-space: nowrap; }
+        .sub-tab-btn.active { color: var(--text-color); font-weight: bold; border-bottom: 2px solid var(--text-color); }
+        .sub-tab-content { display: none; }
+        .sub-tab-content.active { display: block; }
     </style>
 </head>
 <body>
@@ -98,6 +107,7 @@
                 <button onclick="changeView('agenda')" id="menu-agenda" class="menu-item active">📅 Agenda</button>
                 <button onclick="changeView('pacientes')" id="menu-pacientes" class="menu-item">👥 Pacientes</button>
                 <button onclick="changeView('procedimentos')" id="menu-procedimentos" class="menu-item">✨ Procedimentos</button>
+                <button onclick="changeView('documentos')" id="menu-documentos" class="menu-item">📄 Documentos</button>
                 <button onclick="changeView('profissionais')" id="menu-profissionais" class="menu-item">👩‍⚕️ Profissionais</button>
                 <button onclick="changeView('configuracoes')" id="menu-configuracoes" class="menu-item">⚙️ Configurações</button>
             </nav>
@@ -143,10 +153,38 @@
                 <table><thead><tr><th>Procedimento</th><th>Duração</th><th>Valor</th></tr></thead><tbody id="tabela-procedimentos"></tbody></table>
             </div>
 
+            <!-- VIEW DOCUMENTOS (NOVA) -->
+            <div id="documentos" class="view">
+                <h2>📄 Central de Documentos</h2>
+                <div class="sub-tabs">
+                    <button class="sub-tab-btn active" onclick="mudarAbaDocumento('doc-anamnese', this)">Anamneses</button>
+                    <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-prontuario', this)">Prontuários</button>
+                    <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-receita', this)">Receitas</button>
+                    <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-termo', this)">Termos de Consentimento</button>
+                    <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-atestado', this)">Atestados</button>
+                </div>
+
+                <div id="doc-anamnese" class="sub-tab-content active">
+                    <p style="color: #666; font-style: italic;">Módulo de Anamnese em construção. Aqui criaremos os formulários baseados no paciente.</p>
+                </div>
+                <div id="doc-prontuario" class="sub-tab-content">
+                    <p style="color: #666; font-style: italic;">Módulo de Prontuários em construção. Acompanhamento de evolução do paciente.</p>
+                </div>
+                <div id="doc-receita" class="sub-tab-content">
+                    <p style="color: #666; font-style: italic;">Módulo de Receitas em construção. Prescrição rápida de home-care.</p>
+                </div>
+                <div id="doc-termo" class="sub-tab-content">
+                    <p style="color: #666; font-style: italic;">Módulo de Termos em construção. Emissão de assinaturas e responsabilidades.</p>
+                </div>
+                <div id="doc-atestado" class="sub-tab-content">
+                    <p style="color: #666; font-style: italic;">Módulo de Atestados em construção. Emissão padrão de atestados de comparecimento.</p>
+                </div>
+            </div>
+
             <!-- VIEW PROFISSIONAIS -->
             <div id="profissionais" class="view">
                 <h2>👩‍⚕️ Cadastro de Profissional</h2>
-                <input type="hidden" id="cad-id-edit"> <!-- Campo oculto para edição -->
+                <input type="hidden" id="cad-id-edit">
                 
                 <div class="form-row">
                     <div class="input-group"><label>Nome Completo</label><input type="text" id="cad-nome"></div>
@@ -162,11 +200,12 @@
                         <label><input type="checkbox" id="perm-agenda" checked> 📅 Agenda</label>
                         <label><input type="checkbox" id="perm-pacientes" checked> 👥 Pacientes</label>
                         <label><input type="checkbox" id="perm-procedimentos"> ✨ Procedimentos</label>
+                        <label><input type="checkbox" id="perm-documentos"> 📄 Documentos</label>
                         <label><input type="checkbox" id="perm-profissionais"> 👩‍⚕️ Profissionais</label>
                         <label><input type="checkbox" id="perm-configuracoes"> ⚙️ Configurações</label>
                     </div>
                 </div>
-                <button class="btn-primary" id="btn-salvar-prof" style="margin-top: 20px; width: auto; padding: 10px 30px;" onclick="salvarProfissional()">Salvar Profissional</button>
+                <button class="btn-primary" id="btn-salvar-prof" style="margin-top: 10px; width: auto; padding: 10px 30px;" onclick="salvarProfissional()">Salvar Profissional</button>
                 <button class="btn-primary" id="btn-cancelar-edit" style="display:none; background:#999; margin-left: 10px; width: auto; padding: 10px 30px;" onclick="cancelarEdicaoProfissional()">Cancelar Edição</button>
 
                 <h3 style="margin-top: 40px; margin-bottom: 10px;">📋 Profissionais Ativos</h3>
@@ -178,7 +217,7 @@
 
             <!-- VIEW CONFIGURAÇÕES -->
             <div id="configuracoes" class="view">
-                <h2>⚙️ Configurações e Resumo</h2>
+                <h2>⚙️ Configurações da Clínica</h2>
                 
                 <div class="dashboard-cards">
                     <div class="card">
@@ -192,12 +231,23 @@
                     </div>
                 </div>
 
-                <h3 style="margin-bottom: 15px; margin-top: 30px;">Dados da Clínica</h3>
+                <!-- Novo Card de Horários de Operação -->
+                <h3 style="margin-bottom: 15px; margin-top: 30px; border-bottom: 1px solid var(--border-color); padding-bottom:5px;">🕒 Horário de Funcionamento da Agenda</h3>
                 <div class="form-row">
-                    <div class="input-group"><label>Nome Fantasia</label><input type="text" value="Lumina's Clínica Estética"></div>
-                    <div class="input-group"><label>WhatsApp da Clínica</label><input type="text" placeholder="(XX) XXXXX-XXXX"></div>
+                    <div class="input-group">
+                        <label>Hora de Abertura</label>
+                        <input type="time" id="conf-abertura">
+                    </div>
+                    <div class="input-group">
+                        <label>Hora de Fechamento</label>
+                        <input type="time" id="conf-fechamento">
+                    </div>
+                    <div class="input-group">
+                        <label>Horário de Almoço (Bloqueado)</label>
+                        <input type="time" id="conf-almoco">
+                    </div>
                 </div>
-                <button class="btn-primary" style="width: auto; padding: 10px 30px;" onclick="alert('Dados salvos localmente!')">Atualizar Dados</button>
+                <button class="btn-primary" style="width: auto; padding: 10px 30px;" onclick="salvarConfiguracoesHorario()">Sincronizar Agenda</button>
             </div>
         </main>
     </div>
@@ -211,12 +261,11 @@
 
             <div class="input-group">
                 <label>Nome do Paciente (Busca ou cadastra na hora)</label>
-                <!-- Datalist permite buscar pacientes existentes ou digitar um novo -->
                 <input list="lista-pacientes" id="modal-paciente-nome" placeholder="Ex: Maria Clara">
                 <datalist id="lista-pacientes"></datalist>
             </div>
             <div class="input-group">
-                <label>WhatsApp (Preencha apenas se for paciente novo)</label>
+                <label>WhatsApp (Preencha se for paciente novo)</label>
                 <input type="text" id="modal-paciente-whatsapp" placeholder="(Opcional)">
             </div>
 
@@ -229,7 +278,24 @@
     </div>
 
     <script>
-        const HORARIOS_AGENDA = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+        // --- CONFIGURAÇÕES DE HORÁRIO DINÂMICOS (Salvos na memória do navegador) ---
+        let HORARIOS_AGENDA = [];
+        let confAbertura = localStorage.getItem('lumina_abertura') || '08:00';
+        let confFechamento = localStorage.getItem('lumina_fechamento') || '18:00';
+        let confAlmoco = localStorage.getItem('lumina_almoco') || '12:00';
+
+        function gerarArrayDeHorarios() {
+            HORARIOS_AGENDA = [];
+            let horaAtual = parseInt(confAbertura.split(':')[0]);
+            let horaFim = parseInt(confFechamento.split(':')[0]);
+            
+            for(let i = horaAtual; i <= horaFim; i++) {
+                let horaFormatada = (i < 10 ? '0'+i : i) + ':00';
+                HORARIOS_AGENDA.push(horaFormatada);
+            }
+        }
+        gerarArrayDeHorarios(); // Gera logo que a página carrega
+
         let pacientesGlobais = [];
         let procedimentosGlobais = [];
         let profissionaisGlobais = [];
@@ -251,13 +317,66 @@
         // --- INICIALIZAÇÃO ---
         async function carregarDadosGlobais() {
             document.getElementById('data-agenda').value = dataSelecionadaStr;
+            
+            // Preenche os inputs de config de horário com os dados atuais
+            document.getElementById('conf-abertura').value = confAbertura;
+            document.getElementById('conf-fechamento').value = confFechamento;
+            document.getElementById('conf-almoco').value = confAlmoco;
+
             await atualizarListaPacientes();
             await atualizarListaProcedimentos();
             await carregarProfissionais();
             await gerarGradeAgenda();
         }
 
-        // --- LÓGICA DE DATAS ---
+        // --- LÓGICA DE LOGIN ---
+        async function fazerLogin() {
+            const nick = document.getElementById('login-nick').value;
+            const senha = document.getElementById('login-senha').value;
+            
+            const { data, error } = await supabaseClient.from('usuarios').select('*').eq('nick', nick).eq('senha', senha).single();
+
+            let perms = typeof data?.permissoes === 'string' ? JSON.parse(data.permissoes) : (data?.permissoes || []);
+            
+            if (data && !error && !perms.includes('inativo')) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.body.style.display = 'block'; 
+                document.getElementById('app-screen').style.display = 'flex';
+                document.getElementById('login-error').style.display = 'none';
+                aplicarPermissoes(perms);
+                carregarDadosGlobais();
+            } else {
+                document.getElementById('login-error').style.display = 'block';
+            }
+        }
+
+        function fazerLogout() { location.reload(); }
+
+        function aplicarPermissoes(perms) {
+            ['agenda', 'pacientes', 'procedimentos', 'documentos', 'profissionais', 'configuracoes'].forEach(menu => {
+                const btn = document.getElementById('menu-' + menu);
+                btn.style.display = perms.includes(menu) ? 'flex' : 'none';
+            });
+            changeView(perms[0] || 'agenda');
+        }
+
+        function changeView(viewId) {
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            document.getElementById('menu-' + viewId).classList.add('active');
+            if(viewId === 'configuracoes') atualizarDashboard(); 
+        }
+
+        // Lógica Sub-Abas de Documentos
+        function mudarAbaDocumento(abaId, btnElement) {
+            document.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(abaId).classList.add('active');
+            btnElement.classList.add('active');
+        }
+
+        // --- LÓGICA DA AGENDA (DATAS E GRADES) ---
         async function mudarData(dias) {
             dataAtualObj.setDate(dataAtualObj.getDate() + dias);
             dataSelecionadaStr = obterDataFormatadaParaInput(dataAtualObj);
@@ -273,46 +392,116 @@
             }
         }
 
-        // --- LÓGICA DE LOGIN ---
-        async function fazerLogin() {
-            const nick = document.getElementById('login-nick').value;
-            const senha = document.getElementById('login-senha').value;
+        async function gerarGradeAgenda() {
+            const { data: agendamentos } = await supabaseClient.from('agendamentos').select('*').eq('data_agendamento', dataSelecionadaStr);
+            agendamentosDoDiaGlobais = agendamentos || [];
+
+            const container = document.getElementById('grade-agenda');
+            container.innerHTML = ''; 
             
-            const { data, error } = await supabaseClient.from('usuarios').select('*').eq('nick', nick).eq('senha', senha).single();
+            HORARIOS_AGENDA.forEach(hora => {
+                const row = document.createElement('div');
+                row.className = 'agenda-row';
 
-            // Verifica se o usuário logado está na Lixeira (se tiver 'inativo' nas permissões, o login é bloqueado)
-            let perms = typeof data?.permissoes === 'string' ? JSON.parse(data.permissoes) : (data?.permissoes || []);
-            
-            if (data && !error && !perms.includes('inativo')) {
-                document.getElementById('login-screen').style.display = 'none';
-                document.body.style.display = 'block'; 
-                document.getElementById('app-screen').style.display = 'flex';
-                document.getElementById('login-error').style.display = 'none';
-                aplicarPermissoes(perms);
-                carregarDadosGlobais();
-            } else {
-                document.getElementById('login-error').style.display = 'block';
-            }
-        }
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'agenda-time';
+                timeDiv.textContent = hora;
 
-        function fazerLogout() {
-            location.reload(); // Recarrega a página para limpar a memória
-        }
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'agenda-slot';
+                
+                const agendamento = agendamentosDoDiaGlobais.find(a => a.hora === hora);
 
-        function aplicarPermissoes(perms) {
-            ['agenda', 'pacientes', 'procedimentos', 'profissionais', 'configuracoes'].forEach(menu => {
-                const btn = document.getElementById('menu-' + menu);
-                btn.style.display = perms.includes(menu) ? 'flex' : 'none';
+                // Compara apenas a hora sem os minutos para simplificar (ex: 12:00 vira 12)
+                const horaAlmocoSimplificada = confAlmoco.split(':')[0] + ':00';
+
+                if (hora === horaAlmocoSimplificada) {
+                    slotDiv.textContent = 'Almoço';
+                    slotDiv.classList.add('slot-almoco');
+                } else if (agendamento) {
+                    if (agendamento.is_continuacao) {
+                        slotDiv.innerHTML = `<span>↳ Continuação: ${agendamento.paciente_nome}</span>`;
+                        slotDiv.classList.add('slot-continuacao');
+                    } else {
+                        slotDiv.innerHTML = `<span>👤 ${agendamento.paciente_nome} - ${agendamento.procedimento_nome}</span>`;
+                        slotDiv.classList.add('slot-ocupado');
+                        const btnCancelar = document.createElement('button');
+                        btnCancelar.className = 'btn-cancelar';
+                        btnCancelar.textContent = 'Desmarcar';
+                        btnCancelar.onclick = (e) => cancelarAgendamento(agendamento.id_agrupador, e);
+                        slotDiv.appendChild(btnCancelar);
+                    }
+                } else {
+                    slotDiv.textContent = 'Livre (Clique para Agendar)';
+                    slotDiv.classList.add('slot-livre');
+                    slotDiv.onclick = () => abrirModalAgendamento(hora);
+                }
+                row.appendChild(timeDiv);
+                row.appendChild(slotDiv);
+                container.appendChild(row);
             });
-            changeView(perms[0] || 'agenda');
+
+            atualizarDashboard(); 
         }
 
-        function changeView(viewId) {
-            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
-            document.querySelectorAll('.menu-item').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-            document.getElementById('menu-' + viewId).classList.add('active');
-            if(viewId === 'configuracoes') atualizarDashboard(); // Atualiza painel financeiro
+        function abrirModalAgendamento(hora) {
+            horaSelecionadaParaAgendamento = hora;
+            document.getElementById('modal-horario').textContent = `Dia ${formatarDataVisor(dataSelecionadaStr)} - Horário: ${hora}`;
+            document.getElementById('modal-agendamento').style.display = 'flex';
+        }
+
+        function fecharModal() {
+            document.getElementById('modal-agendamento').style.display = 'none';
+            document.getElementById('modal-paciente-nome').value = '';
+            document.getElementById('modal-paciente-whatsapp').value = '';
+            document.getElementById('modal-procedimento').value = '';
+        }
+
+        async function confirmarAgendamento() {
+            const pacienteNome = document.getElementById('modal-paciente-nome').value.trim();
+            const pacienteWhats = document.getElementById('modal-paciente-whatsapp').value.trim();
+            const procedimentoNome = document.getElementById('modal-procedimento').value;
+
+            if(!pacienteNome || !procedimentoNome) return alert("Preencha o nome e selecione um procedimento.");
+
+            const pacienteExiste = pacientesGlobais.find(p => p.nome.toLowerCase() === pacienteNome.toLowerCase());
+            if(!pacienteExiste) {
+                await salvarPaciente(pacienteNome, pacienteWhats); 
+            }
+
+            const procDetalhes = procedimentosGlobais.find(p => p.nome === procedimentoNome);
+            const duracao = procDetalhes ? procDetalhes.duracao : 1;
+            const idAgrupador = Date.now(); 
+
+            let agendamentosParaInserir = [];
+
+            if (duracao > 1) {
+                const indexAtual = HORARIOS_AGENDA.indexOf(horaSelecionadaParaAgendamento);
+                const proximaHora = HORARIOS_AGENDA[indexAtual + 1];
+                const horaAlmocoSimplificada = confAlmoco.split(':')[0] + ':00';
+
+                if (!proximaHora || proximaHora === horaAlmocoSimplificada) return alert("Sem tempo livre na sequência para 2 horas.");
+                const conflito = agendamentosDoDiaGlobais.find(a => a.hora === proximaHora);
+                if (conflito) return alert("O próximo horário já está ocupado.");
+
+                agendamentosParaInserir.push({ id_agrupador: idAgrupador, data_agendamento: dataSelecionadaStr, hora: proximaHora, paciente_nome: pacienteNome, procedimento_nome: procedimentoNome, is_continuacao: true });
+            }
+
+            agendamentosParaInserir.push({ id_agrupador: idAgrupador, data_agendamento: dataSelecionadaStr, hora: horaSelecionadaParaAgendamento, paciente_nome: pacienteNome, procedimento_nome: procedimentoNome, is_continuacao: false });
+
+            const { error } = await supabaseClient.from('agendamentos').insert(agendamentosParaInserir);
+            if(error) return alert("Erro ao agendar.");
+
+            fecharModal();
+            await gerarGradeAgenda(); 
+        }
+
+        async function cancelarAgendamento(idAgrupador, event) {
+            event.stopPropagation(); 
+            if(confirm(`Tem certeza que deseja desmarcar?`)) {
+                await supabaseClient.from('agendamentos').delete().eq('id_agrupador', idAgrupador);
+                await gerarGradeAgenda();
+            }
         }
 
         // --- LÓGICA DE PACIENTES ---
@@ -336,8 +525,7 @@
             
             const tbody = document.getElementById('tabela-pacientes');
             const datalist = document.getElementById('lista-pacientes');
-            tbody.innerHTML = '';
-            datalist.innerHTML = '';
+            tbody.innerHTML = ''; datalist.innerHTML = '';
             
             if (pacientesGlobais.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#666;">Nenhum paciente.</td></tr>`;
@@ -369,8 +557,7 @@
             
             const tbody = document.getElementById('tabela-procedimentos');
             const selectProcedimento = document.getElementById('modal-procedimento');
-            tbody.innerHTML = '';
-            selectProcedimento.innerHTML = '<option value="">Selecione um procedimento...</option>';
+            tbody.innerHTML = ''; selectProcedimento.innerHTML = '<option value="">Selecione...</option>';
             
             if (procedimentosGlobais.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#666;">Nenhum procedimento.</td></tr>`;
@@ -382,7 +569,7 @@
             }
         }
 
-        // --- LÓGICA DE PROFISSIONAIS (COM LIXEIRA) ---
+        // --- LÓGICA DE PROFISSIONAIS ---
         async function carregarProfissionais() {
             const { data } = await supabaseClient.from('usuarios').select('*').neq('nick', 'admin').order('nome');
             profissionaisGlobais = data || [];
@@ -395,12 +582,11 @@
                 let perms = typeof prof.permissoes === 'string' ? JSON.parse(prof.permissoes) : prof.permissoes;
                 const estaNaLixeira = perms.includes('inativo');
                 
-                let botoes = '';
                 if(estaNaLixeira) {
-                    botoes = `<button class="btn-acao" onclick="alterarStatusProfissional('${prof.id}', true)">♻️ Restaurar</button>`;
+                    let botoes = `<button class="btn-acao" onclick="alterarStatusProfissional('${prof.id}', true)">♻️ Restaurar</button>`;
                     tbodyInativos.innerHTML += `<tr><td>${prof.nome}</td><td>${prof.especialidade}</td><td>${prof.nick}</td><td>${botoes}</td></tr>`;
                 } else {
-                    botoes = `
+                    let botoes = `
                         <button class="btn-acao" onclick="prepararEdicaoProfissional('${prof.id}')">✏️ Editar</button>
                         <button class="btn-acao danger" onclick="alterarStatusProfissional('${prof.id}', false)">🗑️ Lixeira</button>
                     `;
@@ -422,20 +608,18 @@
             if(document.getElementById('perm-agenda').checked) permissoes.push('agenda');
             if(document.getElementById('perm-pacientes').checked) permissoes.push('pacientes');
             if(document.getElementById('perm-procedimentos').checked) permissoes.push('procedimentos');
+            if(document.getElementById('perm-documentos').checked) permissoes.push('documentos');
             if(document.getElementById('perm-profissionais').checked) permissoes.push('profissionais');
             if(document.getElementById('perm-configuracoes').checked) permissoes.push('configuracoes');
 
             if(idEdit) {
-                // Atualizar existente
                 await supabaseClient.from('usuarios').update({ nome, nick, especialidade, senha, permissoes }).eq('id', idEdit);
                 alert("Profissional atualizado!");
             } else {
-                // Criar novo
                 const { error } = await supabaseClient.from('usuarios').insert([{ nome, nick, especialidade, senha, permissoes }]);
                 if(error) return alert("Erro. Nickname pode já existir.");
                 alert("Profissional cadastrado!");
             }
-            
             cancelarEdicaoProfissional();
             await carregarProfissionais();
         }
@@ -443,7 +627,6 @@
         function prepararEdicaoProfissional(id) {
             const prof = profissionaisGlobais.find(p => p.id === id);
             if(!prof) return;
-            
             document.getElementById('cad-id-edit').value = prof.id;
             document.getElementById('cad-nome').value = prof.nome;
             document.getElementById('cad-especialidade').value = prof.especialidade;
@@ -454,6 +637,7 @@
             document.getElementById('perm-agenda').checked = perms.includes('agenda');
             document.getElementById('perm-pacientes').checked = perms.includes('pacientes');
             document.getElementById('perm-procedimentos').checked = perms.includes('procedimentos');
+            document.getElementById('perm-documentos').checked = perms.includes('documentos');
             document.getElementById('perm-profissionais').checked = perms.includes('profissionais');
             document.getElementById('perm-configuracoes').checked = perms.includes('configuracoes');
 
@@ -475,145 +659,46 @@
             const prof = profissionaisGlobais.find(p => p.id === id);
             let perms = typeof prof.permissoes === 'string' ? JSON.parse(prof.permissoes) : prof.permissoes;
             
-            if(restaurar) {
-                perms = perms.filter(p => p !== 'inativo'); // Tira da lixeira
-            } else {
-                if(confirm("Deseja mover este profissional para a lixeira?")) {
-                    perms.push('inativo'); // Coloca na lixeira
-                } else return;
-            }
+            if(restaurar) { perms = perms.filter(p => p !== 'inativo'); } 
+            else { if(confirm("Mover para a lixeira?")) { perms.push('inativo'); } else return; }
 
             await supabaseClient.from('usuarios').update({ permissoes: perms }).eq('id', id);
             await carregarProfissionais();
         }
 
+        // --- ATUALIZAÇÃO CONFIGURAÇÕES / HORÁRIOS ---
+        function salvarConfiguracoesHorario() {
+            const novaAbertura = document.getElementById('conf-abertura').value;
+            const novoFechamento = document.getElementById('conf-fechamento').value;
+            const novoAlmoco = document.getElementById('conf-almoco').value;
 
-        // --- LÓGICA DA AGENDA E DASHBOARD ---
-        async function gerarGradeAgenda() {
-            const { data: agendamentos } = await supabaseClient.from('agendamentos').select('*').eq('data_agendamento', dataSelecionadaStr);
-            agendamentosDoDiaGlobais = agendamentos || [];
-
-            const container = document.getElementById('grade-agenda');
-            container.innerHTML = ''; 
-            
-            HORARIOS_AGENDA.forEach(hora => {
-                const row = document.createElement('div');
-                row.className = 'agenda-row';
-
-                const timeDiv = document.createElement('div');
-                timeDiv.className = 'agenda-time';
-                timeDiv.textContent = hora;
-
-                const slotDiv = document.createElement('div');
-                slotDiv.className = 'agenda-slot';
-                
-                const agendamento = agendamentosDoDiaGlobais.find(a => a.hora === hora);
-
-                if (hora === '12:00') {
-                    slotDiv.textContent = 'Almoço';
-                    slotDiv.classList.add('slot-almoco');
-                } else if (agendamento) {
-                    if (agendamento.is_continuacao) {
-                        slotDiv.innerHTML = `<span>↳ Continuação: ${agendamento.paciente_nome}</span>`;
-                        slotDiv.classList.add('slot-continuacao');
-                    } else {
-                        slotDiv.innerHTML = `<span>👤 ${agendamento.paciente_nome} - ${agendamento.procedimento_nome}</span>`;
-                        slotDiv.classList.add('slot-ocupado');
-                        const btnCancelar = document.createElement('button');
-                        btnCancelar.className = 'btn-cancelar';
-                        btnCancelar.textContent = 'Desmarcar';
-                        btnCancelar.onclick = (e) => cancelarAgendamento(agendamento.id_agrupador, e);
-                        slotDiv.appendChild(btnCancelar);
-                    }
-                } else {
-                    slotDiv.textContent = 'Livre';
-                    slotDiv.classList.add('slot-livre');
-                    slotDiv.onclick = () => abrirModalAgendamento(hora);
-                }
-                row.appendChild(timeDiv);
-                row.appendChild(slotDiv);
-                container.appendChild(row);
-            });
-
-            atualizarDashboard(); // Se o usuário tiver a tela config aberta, atualiza na hora
-        }
-
-        function abrirModalAgendamento(hora) {
-            horaSelecionadaParaAgendamento = hora;
-            document.getElementById('modal-horario').textContent = `Dia ${formatarDataVisor(dataSelecionadaStr)} - Horário: ${hora}`;
-            document.getElementById('modal-agendamento').style.display = 'flex';
-        }
-
-        function fecharModal() {
-            document.getElementById('modal-agendamento').style.display = 'none';
-            document.getElementById('modal-paciente-nome').value = '';
-            document.getElementById('modal-paciente-whatsapp').value = '';
-            document.getElementById('modal-procedimento').value = '';
-        }
-
-        async function confirmarAgendamento() {
-            const pacienteNome = document.getElementById('modal-paciente-nome').value.trim();
-            const pacienteWhats = document.getElementById('modal-paciente-whatsapp').value.trim();
-            const procedimentoNome = document.getElementById('modal-procedimento').value;
-
-            if(!pacienteNome || !procedimentoNome) return alert("Preencha o nome e selecione um procedimento.");
-
-            // INTEGRAÇÃO: Auto-cadastra paciente se for novo
-            const pacienteExiste = pacientesGlobais.find(p => p.nome.toLowerCase() === pacienteNome.toLowerCase());
-            if(!pacienteExiste) {
-                await salvarPaciente(pacienteNome, pacienteWhats); // Cadastra no banco e atualiza a lista oculta
+            if(!novaAbertura || !novoFechamento || !novoAlmoco) {
+                return alert("Por favor, preencha todos os campos de horário.");
             }
 
-            const procDetalhes = procedimentosGlobais.find(p => p.nome === procedimentoNome);
-            const duracao = procDetalhes ? procDetalhes.duracao : 1;
-            const idAgrupador = Date.now(); 
+            // Salva na memória do navegador do usuário
+            localStorage.setItem('lumina_abertura', novaAbertura);
+            localStorage.setItem('lumina_fechamento', novoFechamento);
+            localStorage.setItem('lumina_almoco', novoAlmoco);
 
-            let agendamentosParaInserir = [];
+            confAbertura = novaAbertura;
+            confFechamento = novoFechamento;
+            confAlmoco = novoAlmoco;
 
-            if (duracao > 1) {
-                const indexAtual = HORARIOS_AGENDA.indexOf(horaSelecionadaParaAgendamento);
-                const proximaHora = HORARIOS_AGENDA[indexAtual + 1];
-
-                if (!proximaHora || proximaHora === '12:00') return alert("Sem tempo livre na sequência para 2 horas.");
-                const conflito = agendamentosDoDiaGlobais.find(a => a.hora === proximaHora);
-                if (conflito) return alert("O próximo horário já está ocupado.");
-
-                agendamentosParaInserir.push({ id_agrupador: idAgrupador, data_agendamento: dataSelecionadaStr, hora: proximaHora, paciente_nome: pacienteNome, procedimento_nome: procedimentoNome, is_continuacao: true });
-            }
-
-            agendamentosParaInserir.push({ id_agrupador: idAgrupador, data_agendamento: dataSelecionadaStr, hora: horaSelecionadaParaAgendamento, paciente_nome: pacienteNome, procedimento_nome: procedimentoNome, is_continuacao: false });
-
-            const { error } = await supabaseClient.from('agendamentos').insert(agendamentosParaInserir);
-            if(error) return alert("Erro ao agendar.");
-
-            fecharModal();
-            await gerarGradeAgenda(); 
-        }
-
-        async function cancelarAgendamento(idAgrupador, event) {
-            event.stopPropagation(); 
-            if(confirm(`Tem certeza que deseja desmarcar?`)) {
-                await supabaseClient.from('agendamentos').delete().eq('id_agrupador', idAgrupador);
-                await gerarGradeAgenda();
-            }
+            gerarArrayDeHorarios();
+            gerarGradeAgenda(); // Sincroniza visualmente a agenda
+            alert("Horários atualizados e sincronizados com a agenda com sucesso!");
         }
 
         // --- DASHBOARD FINANCEIRO ---
         function atualizarDashboard() {
-            let faturamento = 0;
-            let atendimentos = 0;
-
-            // Filtra apenas agendamentos principais (exclui blocos de "continuação" para não somar o valor 2x)
+            let faturamento = 0; let atendimentos = 0;
             const agendamentosPrincipais = agendamentosDoDiaGlobais.filter(a => !a.is_continuacao);
             
             agendamentosPrincipais.forEach(ag => {
                 const proc = procedimentosGlobais.find(p => p.nome === ag.procedimento_nome);
-                if(proc) {
-                    faturamento += proc.valor;
-                    atendimentos++;
-                }
+                if(proc) { faturamento += proc.valor; atendimentos++; }
             });
-
             document.getElementById('dash-faturamento-dia').textContent = `R$ ${faturamento.toFixed(2)}`;
             document.getElementById('dash-atendimentos-dia').textContent = atendimentos;
             document.getElementById('dash-data-ref').textContent = `Ref: ${formatarDataVisor(dataSelecionadaStr)}`;
