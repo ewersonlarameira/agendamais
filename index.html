@@ -45,26 +45,38 @@
         .agenda-header h2 { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .date-controls { display: flex; gap: 10px; align-items: center; }
         .date-controls button { background: var(--bg-color); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 4px; cursor: pointer; }
-        .date-controls button:hover { background: var(--hover-bg); }
         .date-controls input[type="date"] { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; }
 
-        .agenda-grid { border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden; }
-        .agenda-row { display: flex; border-bottom: 1px solid var(--border-color); }
-        .agenda-row:last-child { border-bottom: none; }
-        .agenda-time { width: 80px; padding: 15px; background: var(--hover-bg); font-weight: bold; text-align: center; border-right: 1px solid var(--border-color); }
-        .agenda-slot { flex: 1; padding: 15px; cursor: pointer; transition: background 0.2s; display: flex; justify-content: space-between; align-items: center; }
-        .agenda-slot:hover { background: #f9f9f9; }
-        .agenda-slot.ocupado { background: var(--text-color); color: var(--sidebar-bg); cursor: default; }
-        .agenda-slot.continuacao { background: #333; color: #ccc; cursor: default; }
-        .btn-cancelar { background: #d32f2f; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        /* Grade Visual Colorida da Agenda */
+        .agenda-grid { display: flex; flex-direction: column; gap: 8px; }
+        .agenda-row { display: flex; align-items: center; }
+        .agenda-time { width: 80px; padding: 15px 0; font-weight: bold; text-align: center; }
+        .agenda-slot { flex: 1; padding: 15px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 500; transition: opacity 0.2s; }
+        .agenda-slot:hover { opacity: 0.8; }
+        
+        .slot-livre { background-color: #4CAF50; color: white; }
+        .slot-ocupado { background-color: #FF9800; color: white; cursor: default; }
+        .slot-continuacao { background-color: #FFB74D; color: white; cursor: default; }
+        .slot-almoco { background-color: #9e9e9e; color: white; cursor: not-allowed; }
+        
+        .btn-cancelar { background: rgba(0,0,0,0.2); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .btn-cancelar:hover { background: rgba(0,0,0,0.4); }
+        .btn-acao { background: var(--text-color); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-right: 5px;}
+        .btn-acao.danger { background: #d32f2f; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.95rem; }
         th, td { padding: 12px; border-bottom: 1px solid var(--border-color); text-align: left; }
         th { background-color: var(--bg-color); }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: var(--sidebar-bg); padding: 30px; border-radius: 8px; width: 400px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .close-btn { float: right; cursor: pointer; font-size: 1.5rem; font-weight: bold; line-height: 1; }
+
+        /* Dashboard Cards */
+        .dashboard-cards { display: flex; gap: 20px; margin-bottom: 30px; }
+        .card { flex: 1; background: var(--hover-bg); padding: 20px; border-radius: 8px; text-align: center; }
+        .card h3 { margin-bottom: 10px; font-size: 1rem; color: #666; }
+        .card .valor { font-size: 2rem; font-weight: bold; color: var(--text-color); }
     </style>
 </head>
 <body>
@@ -75,7 +87,7 @@
         <div class="input-group"><label>Nickname</label><input type="text" id="login-nick"></div>
         <div class="input-group"><label>Senha</label><input type="password" id="login-senha" maxlength="8"></div>
         <button class="btn-primary" onclick="fazerLogin()">Entrar</button>
-        <p id="login-error" class="error-msg">Credenciais inválidas ou erro de conexão.</p>
+        <p id="login-error" class="error-msg">Credenciais inválidas ou usuário inativo.</p>
     </div>
 
     <!-- APP PRINCIPAL -->
@@ -93,18 +105,20 @@
         </aside>
 
         <main>
+            <!-- VIEW AGENDA -->
             <div id="agenda" class="view active">
                 <div class="agenda-header">
                     <h2>📅 Agenda</h2>
                     <div class="date-controls">
-                        <button onclick="mudarData(-1)">◀ Anterior</button>
+                        <button onclick="mudarData(-1)">◀</button>
                         <input type="date" id="data-agenda" onchange="selecionarDataPeloInput()">
-                        <button onclick="mudarData(1)">Próximo ▶</button>
+                        <button onclick="mudarData(1)">▶</button>
                     </div>
                 </div>
                 <div class="agenda-grid" id="grade-agenda"></div>
             </div>
 
+            <!-- VIEW PACIENTES -->
             <div id="pacientes" class="view">
                 <h2>👥 Cadastro de Pacientes</h2>
                 <div class="form-row">
@@ -116,14 +130,12 @@
                 <table><thead><tr><th>Nome</th><th>WhatsApp</th></tr></thead><tbody id="tabela-pacientes"></tbody></table>
             </div>
 
+            <!-- VIEW PROCEDIMENTOS -->
             <div id="procedimentos" class="view">
                 <h2>✨ Catálogo de Procedimentos</h2>
                 <div class="form-row">
                     <div class="input-group"><label>Nome do Serviço</label><input type="text" id="proc-nome"></div>
-                    <div class="input-group">
-                        <label>Duração</label>
-                        <select id="proc-duracao"><option value="1">1 Hora</option><option value="2">2 Horas</option></select>
-                    </div>
+                    <div class="input-group"><label>Duração</label><select id="proc-duracao"><option value="1">1 Hora</option><option value="2">2 Horas</option></select></div>
                     <div class="input-group"><label>Valor (R$)</label><input type="number" id="proc-valor"></div>
                 </div>
                 <button class="btn-primary" style="width: auto; padding: 10px 30px;" onclick="salvarProcedimento()">Salvar Procedimento</button>
@@ -131,8 +143,11 @@
                 <table><thead><tr><th>Procedimento</th><th>Duração</th><th>Valor</th></tr></thead><tbody id="tabela-procedimentos"></tbody></table>
             </div>
 
+            <!-- VIEW PROFISSIONAIS -->
             <div id="profissionais" class="view">
                 <h2>👩‍⚕️ Cadastro de Profissional</h2>
+                <input type="hidden" id="cad-id-edit"> <!-- Campo oculto para edição -->
+                
                 <div class="form-row">
                     <div class="input-group"><label>Nome Completo</label><input type="text" id="cad-nome"></div>
                     <div class="input-group"><label>Especialidade</label><input type="text" id="cad-especialidade"></div>
@@ -151,17 +166,43 @@
                         <label><input type="checkbox" id="perm-configuracoes"> ⚙️ Configurações</label>
                     </div>
                 </div>
-                <button class="btn-primary" style="margin-top: 20px; width: auto; padding: 10px 30px;" onclick="salvarProfissional()">Salvar Profissional</button>
+                <button class="btn-primary" id="btn-salvar-prof" style="margin-top: 20px; width: auto; padding: 10px 30px;" onclick="salvarProfissional()">Salvar Profissional</button>
+                <button class="btn-primary" id="btn-cancelar-edit" style="display:none; background:#999; margin-left: 10px; width: auto; padding: 10px 30px;" onclick="cancelarEdicaoProfissional()">Cancelar Edição</button>
+
+                <h3 style="margin-top: 40px; margin-bottom: 10px;">📋 Profissionais Ativos</h3>
+                <table><thead><tr><th>Nome</th><th>Especialidade</th><th>Nick</th><th>Ações</th></tr></thead><tbody id="tabela-profissionais-ativos"></tbody></table>
+
+                <h3 style="margin-top: 40px; margin-bottom: 10px; color: #d32f2f;">🗑️ Lixeira (Inativos)</h3>
+                <table><thead><tr><th>Nome</th><th>Especialidade</th><th>Nick</th><th>Ações</th></tr></thead><tbody id="tabela-profissionais-inativos"></tbody></table>
             </div>
 
+            <!-- VIEW CONFIGURAÇÕES -->
             <div id="configuracoes" class="view">
-                <h2>⚙️ Configurações</h2>
-                <p>O aplicativo agora está rodando em tempo real com o banco de dados Supabase e navegação de dias ativa!</p>
+                <h2>⚙️ Configurações e Resumo</h2>
+                
+                <div class="dashboard-cards">
+                    <div class="card">
+                        <h3>Faturamento do Dia Selecionado</h3>
+                        <div class="valor" id="dash-faturamento-dia">R$ 0,00</div>
+                        <p style="font-size: 0.8rem; margin-top:5px;" id="dash-data-ref">Ref: Hoje</p>
+                    </div>
+                    <div class="card">
+                        <h3>Atendimentos no Dia</h3>
+                        <div class="valor" id="dash-atendimentos-dia">0</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 15px; margin-top: 30px;">Dados da Clínica</h3>
+                <div class="form-row">
+                    <div class="input-group"><label>Nome Fantasia</label><input type="text" value="Lumina's Clínica Estética"></div>
+                    <div class="input-group"><label>WhatsApp da Clínica</label><input type="text" placeholder="(XX) XXXXX-XXXX"></div>
+                </div>
+                <button class="btn-primary" style="width: auto; padding: 10px 30px;" onclick="alert('Dados salvos localmente!')">Atualizar Dados</button>
             </div>
         </main>
     </div>
 
-    <!-- MODAL NOVO AGENDAMENTO -->
+    <!-- MODAL NOVO AGENDAMENTO INTEGRADO -->
     <div id="modal-agendamento" class="modal-overlay">
         <div class="modal-content">
             <span class="close-btn" onclick="fecharModal()">&times;</span>
@@ -169,9 +210,16 @@
             <p id="modal-horario" style="margin-bottom: 20px; font-weight: bold; color: #666;"></p>
 
             <div class="input-group">
-                <label>Paciente</label>
-                <select id="modal-paciente"><option value="">Selecione um paciente...</option></select>
+                <label>Nome do Paciente (Busca ou cadastra na hora)</label>
+                <!-- Datalist permite buscar pacientes existentes ou digitar um novo -->
+                <input list="lista-pacientes" id="modal-paciente-nome" placeholder="Ex: Maria Clara">
+                <datalist id="lista-pacientes"></datalist>
             </div>
+            <div class="input-group">
+                <label>WhatsApp (Preencha apenas se for paciente novo)</label>
+                <input type="text" id="modal-paciente-whatsapp" placeholder="(Opcional)">
+            </div>
+
             <div class="input-group">
                 <label>Procedimento</label>
                 <select id="modal-procedimento"><option value="">Selecione um procedimento...</option></select>
@@ -180,48 +228,46 @@
         </div>
     </div>
 
-    <!-- LÓGICA PRINCIPAL -->
     <script>
         const HORARIOS_AGENDA = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
         let pacientesGlobais = [];
         let procedimentosGlobais = [];
+        let profissionaisGlobais = [];
+        let agendamentosDoDiaGlobais = [];
         let horaSelecionadaParaAgendamento = '';
         
-        // Controle de Datas
         let dataAtualObj = new Date();
-        let dataSelecionadaStr = obterDataFormatadaParaInput(dataAtualObj); // YYYY-MM-DD
+        let dataSelecionadaStr = obterDataFormatadaParaInput(dataAtualObj);
 
         function obterDataFormatadaParaInput(dataObj) {
             const offset = dataObj.getTimezoneOffset() * 60000;
             return new Date(dataObj - offset).toISOString().split('T')[0];
         }
-
         function formatarDataVisor(dataStr) {
             const partes = dataStr.split('-');
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
 
-        // --- INICIALIZAÇÃO DE DADOS ---
+        // --- INICIALIZAÇÃO ---
         async function carregarDadosGlobais() {
             document.getElementById('data-agenda').value = dataSelecionadaStr;
             await atualizarListaPacientes();
             await atualizarListaProcedimentos();
+            await carregarProfissionais();
             await gerarGradeAgenda();
         }
 
-        // --- LÓGICA DE DATAS DA AGENDA ---
+        // --- LÓGICA DE DATAS ---
         async function mudarData(dias) {
             dataAtualObj.setDate(dataAtualObj.getDate() + dias);
             dataSelecionadaStr = obterDataFormatadaParaInput(dataAtualObj);
             document.getElementById('data-agenda').value = dataSelecionadaStr;
             await gerarGradeAgenda();
         }
-
         async function selecionarDataPeloInput() {
             const novaData = document.getElementById('data-agenda').value;
             if(novaData) {
                 dataSelecionadaStr = novaData;
-                // Atualiza o objeto Date para manter a sincronia dos botões de voltar/avançar
                 dataAtualObj = new Date(novaData + "T12:00:00"); 
                 await gerarGradeAgenda();
             }
@@ -234,12 +280,15 @@
             
             const { data, error } = await supabaseClient.from('usuarios').select('*').eq('nick', nick).eq('senha', senha).single();
 
-            if (data && !error) {
+            // Verifica se o usuário logado está na Lixeira (se tiver 'inativo' nas permissões, o login é bloqueado)
+            let perms = typeof data?.permissoes === 'string' ? JSON.parse(data.permissoes) : (data?.permissoes || []);
+            
+            if (data && !error && !perms.includes('inativo')) {
                 document.getElementById('login-screen').style.display = 'none';
                 document.body.style.display = 'block'; 
                 document.getElementById('app-screen').style.display = 'flex';
                 document.getElementById('login-error').style.display = 'none';
-                aplicarPermissoes(data.permissoes);
+                aplicarPermissoes(perms);
                 carregarDadosGlobais();
             } else {
                 document.getElementById('login-error').style.display = 'block';
@@ -247,15 +296,10 @@
         }
 
         function fazerLogout() {
-            document.body.style.display = 'flex';
-            document.getElementById('login-screen').style.display = 'block';
-            document.getElementById('app-screen').style.display = 'none';
-            document.getElementById('login-nick').value = '';
-            document.getElementById('login-senha').value = '';
+            location.reload(); // Recarrega a página para limpar a memória
         }
 
-        function aplicarPermissoes(permissoes) {
-            let perms = typeof permissoes === 'string' ? JSON.parse(permissoes) : permissoes;
+        function aplicarPermissoes(perms) {
             ['agenda', 'pacientes', 'procedimentos', 'profissionais', 'configuracoes'].forEach(menu => {
                 const btn = document.getElementById('menu-' + menu);
                 btn.style.display = perms.includes(menu) ? 'flex' : 'none';
@@ -268,39 +312,39 @@
             document.querySelectorAll('.menu-item').forEach(btn => btn.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
             document.getElementById('menu-' + viewId).classList.add('active');
+            if(viewId === 'configuracoes') atualizarDashboard(); // Atualiza painel financeiro
         }
 
         // --- LÓGICA DE PACIENTES ---
-        async function salvarPaciente() {
-            const nome = document.getElementById('pac-nome').value.trim();
-            const whatsapp = document.getElementById('pac-whatsapp').value.trim();
+        async function salvarPaciente(nomeDireto = null, whatsDireto = null) {
+            const nome = nomeDireto || document.getElementById('pac-nome').value.trim();
+            const whatsapp = whatsDireto || document.getElementById('pac-whatsapp').value.trim();
             if(!nome) return alert("O nome do paciente é obrigatório!");
 
-            const { error } = await supabaseClient.from('pacientes').insert([{ nome, whatsapp }]);
-            if (error) return alert("Erro ao salvar paciente.");
-            
-            document.getElementById('pac-nome').value = '';
-            document.getElementById('pac-whatsapp').value = '';
-            atualizarListaPacientes();
-            alert("Paciente cadastrado com sucesso!");
+            await supabaseClient.from('pacientes').insert([{ nome, whatsapp }]);
+            if(!nomeDireto) {
+                document.getElementById('pac-nome').value = '';
+                document.getElementById('pac-whatsapp').value = '';
+                alert("Paciente cadastrado com sucesso!");
+            }
+            await atualizarListaPacientes();
         }
 
         async function atualizarListaPacientes() {
-            const { data, error } = await supabaseClient.from('pacientes').select('*').order('nome');
-            if (error) return;
+            const { data } = await supabaseClient.from('pacientes').select('*').order('nome');
+            pacientesGlobais = data || [];
             
-            pacientesGlobais = data;
             const tbody = document.getElementById('tabela-pacientes');
-            const selectPaciente = document.getElementById('modal-paciente');
+            const datalist = document.getElementById('lista-pacientes');
             tbody.innerHTML = '';
-            selectPaciente.innerHTML = '<option value="">Selecione um paciente...</option>';
+            datalist.innerHTML = '';
             
-            if (data.length === 0) {
+            if (pacientesGlobais.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#666;">Nenhum paciente.</td></tr>`;
             } else {
-                data.forEach(p => {
+                pacientesGlobais.forEach(p => {
                     tbody.innerHTML += `<tr><td>${p.nome}</td><td>${p.whatsapp || '-'}</td></tr>`;
-                    selectPaciente.innerHTML += `<option value="${p.nome}">${p.nome}</option>`;
+                    datalist.innerHTML += `<option value="${p.nome}">`;
                 });
             }
         }
@@ -312,37 +356,61 @@
             const valor = parseFloat(document.getElementById('proc-valor').value) || 0;
             if(!nome) return alert("Nome obrigatório!");
 
-            const { error } = await supabaseClient.from('procedimentos').insert([{ nome, duracao, valor }]);
-            if(error) return alert("Erro ao salvar.");
-            
+            await supabaseClient.from('procedimentos').insert([{ nome, duracao, valor }]);
             document.getElementById('proc-nome').value = '';
             document.getElementById('proc-valor').value = '';
-            atualizarListaProcedimentos();
+            await atualizarListaProcedimentos();
             alert("Procedimento salvo!");
         }
 
         async function atualizarListaProcedimentos() {
-            const { data, error } = await supabaseClient.from('procedimentos').select('*');
-            if(error) return;
-
-            procedimentosGlobais = data;
+            const { data } = await supabaseClient.from('procedimentos').select('*');
+            procedimentosGlobais = data || [];
+            
             const tbody = document.getElementById('tabela-procedimentos');
             const selectProcedimento = document.getElementById('modal-procedimento');
             tbody.innerHTML = '';
             selectProcedimento.innerHTML = '<option value="">Selecione um procedimento...</option>';
             
-            if (data.length === 0) {
+            if (procedimentosGlobais.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#666;">Nenhum procedimento.</td></tr>`;
             } else {
-                data.forEach(proc => {
-                    tbody.innerHTML += `<tr><td>${proc.nome}</td><td>${proc.duracao} H</td><td>R$ ${proc.valor}</td></tr>`;
-                    selectProcedimento.innerHTML += `<option value="${proc.nome}">${proc.nome} (${proc.duracao}H)</option>`;
+                procedimentosGlobais.forEach(proc => {
+                    tbody.innerHTML += `<tr><td>${proc.nome}</td><td>${proc.duracao} H</td><td>R$ ${proc.valor.toFixed(2)}</td></tr>`;
+                    selectProcedimento.innerHTML += `<option value="${proc.nome}">${proc.nome} (${proc.duracao}H - R$${proc.valor})</option>`;
                 });
             }
         }
 
-        // --- LÓGICA DE PROFISSIONAIS ---
+        // --- LÓGICA DE PROFISSIONAIS (COM LIXEIRA) ---
+        async function carregarProfissionais() {
+            const { data } = await supabaseClient.from('usuarios').select('*').neq('nick', 'admin').order('nome');
+            profissionaisGlobais = data || [];
+            
+            const tbodyAtivos = document.getElementById('tabela-profissionais-ativos');
+            const tbodyInativos = document.getElementById('tabela-profissionais-inativos');
+            tbodyAtivos.innerHTML = ''; tbodyInativos.innerHTML = '';
+
+            profissionaisGlobais.forEach(prof => {
+                let perms = typeof prof.permissoes === 'string' ? JSON.parse(prof.permissoes) : prof.permissoes;
+                const estaNaLixeira = perms.includes('inativo');
+                
+                let botoes = '';
+                if(estaNaLixeira) {
+                    botoes = `<button class="btn-acao" onclick="alterarStatusProfissional('${prof.id}', true)">♻️ Restaurar</button>`;
+                    tbodyInativos.innerHTML += `<tr><td>${prof.nome}</td><td>${prof.especialidade}</td><td>${prof.nick}</td><td>${botoes}</td></tr>`;
+                } else {
+                    botoes = `
+                        <button class="btn-acao" onclick="prepararEdicaoProfissional('${prof.id}')">✏️ Editar</button>
+                        <button class="btn-acao danger" onclick="alterarStatusProfissional('${prof.id}', false)">🗑️ Lixeira</button>
+                    `;
+                    tbodyAtivos.innerHTML += `<tr><td>${prof.nome}</td><td>${prof.especialidade}</td><td>${prof.nick}</td><td>${botoes}</td></tr>`;
+                }
+            });
+        }
+
         async function salvarProfissional() {
+            const idEdit = document.getElementById('cad-id-edit').value;
             const nome = document.getElementById('cad-nome').value.trim();
             const nick = document.getElementById('cad-nick').value.trim();
             const especialidade = document.getElementById('cad-especialidade').value.trim();
@@ -357,25 +425,73 @@
             if(document.getElementById('perm-profissionais').checked) permissoes.push('profissionais');
             if(document.getElementById('perm-configuracoes').checked) permissoes.push('configuracoes');
 
-            const { error } = await supabaseClient.from('usuarios').insert([{ nome, nick, especialidade, senha, permissoes }]);
-            if(error) return alert("Erro ao cadastrar profissional. Nickname pode já existir.");
+            if(idEdit) {
+                // Atualizar existente
+                await supabaseClient.from('usuarios').update({ nome, nick, especialidade, senha, permissoes }).eq('id', idEdit);
+                alert("Profissional atualizado!");
+            } else {
+                // Criar novo
+                const { error } = await supabaseClient.from('usuarios').insert([{ nome, nick, especialidade, senha, permissoes }]);
+                if(error) return alert("Erro. Nickname pode já existir.");
+                alert("Profissional cadastrado!");
+            }
             
-            alert("Profissional cadastrado!");
+            cancelarEdicaoProfissional();
+            await carregarProfissionais();
+        }
+
+        function prepararEdicaoProfissional(id) {
+            const prof = profissionaisGlobais.find(p => p.id === id);
+            if(!prof) return;
+            
+            document.getElementById('cad-id-edit').value = prof.id;
+            document.getElementById('cad-nome').value = prof.nome;
+            document.getElementById('cad-especialidade').value = prof.especialidade;
+            document.getElementById('cad-nick').value = prof.nick;
+            document.getElementById('cad-senha').value = prof.senha;
+            
+            let perms = typeof prof.permissoes === 'string' ? JSON.parse(prof.permissoes) : prof.permissoes;
+            document.getElementById('perm-agenda').checked = perms.includes('agenda');
+            document.getElementById('perm-pacientes').checked = perms.includes('pacientes');
+            document.getElementById('perm-procedimentos').checked = perms.includes('procedimentos');
+            document.getElementById('perm-profissionais').checked = perms.includes('profissionais');
+            document.getElementById('perm-configuracoes').checked = perms.includes('configuracoes');
+
+            document.getElementById('btn-salvar-prof').textContent = "Atualizar Profissional";
+            document.getElementById('btn-cancelar-edit').style.display = "inline-block";
+        }
+
+        function cancelarEdicaoProfissional() {
+            document.getElementById('cad-id-edit').value = '';
             document.getElementById('cad-nome').value = '';
             document.getElementById('cad-nick').value = '';
             document.getElementById('cad-especialidade').value = '';
             document.getElementById('cad-senha').value = '';
+            document.getElementById('btn-salvar-prof').textContent = "Salvar Profissional";
+            document.getElementById('btn-cancelar-edit').style.display = "none";
         }
 
-        // --- LÓGICA DA AGENDA (FILTRADA POR DATA) ---
-        async function gerarGradeAgenda() {
-            // Busca no Supabase os agendamentos correspondentes à data selecionada no input
-            const { data: agendamentos, error } = await supabaseClient
-                .from('agendamentos')
-                .select('*')
-                .eq('data_agendamento', dataSelecionadaStr);
+        async function alterarStatusProfissional(id, restaurar) {
+            const prof = profissionaisGlobais.find(p => p.id === id);
+            let perms = typeof prof.permissoes === 'string' ? JSON.parse(prof.permissoes) : prof.permissoes;
+            
+            if(restaurar) {
+                perms = perms.filter(p => p !== 'inativo'); // Tira da lixeira
+            } else {
+                if(confirm("Deseja mover este profissional para a lixeira?")) {
+                    perms.push('inativo'); // Coloca na lixeira
+                } else return;
+            }
 
-            if (error) return console.error(error);
+            await supabaseClient.from('usuarios').update({ permissoes: perms }).eq('id', id);
+            await carregarProfissionais();
+        }
+
+
+        // --- LÓGICA DA AGENDA E DASHBOARD ---
+        async function gerarGradeAgenda() {
+            const { data: agendamentos } = await supabaseClient.from('agendamentos').select('*').eq('data_agendamento', dataSelecionadaStr);
+            agendamentosDoDiaGlobais = agendamentos || [];
 
             const container = document.getElementById('grade-agenda');
             container.innerHTML = ''; 
@@ -391,33 +507,35 @@
                 const slotDiv = document.createElement('div');
                 slotDiv.className = 'agenda-slot';
                 
-                const agendamento = agendamentos.find(a => a.hora === hora);
+                const agendamento = agendamentosDoDiaGlobais.find(a => a.hora === hora);
 
                 if (hora === '12:00') {
-                    slotDiv.textContent = 'Almoço (Bloqueado)';
-                    slotDiv.classList.add('ocupado');
+                    slotDiv.textContent = 'Almoço';
+                    slotDiv.classList.add('slot-almoco');
                 } else if (agendamento) {
                     if (agendamento.is_continuacao) {
-                        slotDiv.innerHTML = `<span>↳ Continuação de: <b>${agendamento.paciente_nome}</b></span>`;
-                        slotDiv.classList.add('continuacao');
+                        slotDiv.innerHTML = `<span>↳ Continuação: ${agendamento.paciente_nome}</span>`;
+                        slotDiv.classList.add('slot-continuacao');
                     } else {
-                        slotDiv.innerHTML = `<span>👥 <b>${agendamento.paciente_nome}</b> - ${agendamento.procedimento_nome}</span>`;
-                        slotDiv.classList.add('ocupado');
-                        
+                        slotDiv.innerHTML = `<span>👤 ${agendamento.paciente_nome} - ${agendamento.procedimento_nome}</span>`;
+                        slotDiv.classList.add('slot-ocupado');
                         const btnCancelar = document.createElement('button');
                         btnCancelar.className = 'btn-cancelar';
-                        btnCancelar.textContent = 'Cancelar';
+                        btnCancelar.textContent = 'Desmarcar';
                         btnCancelar.onclick = (e) => cancelarAgendamento(agendamento.id_agrupador, e);
                         slotDiv.appendChild(btnCancelar);
                     }
                 } else {
-                    slotDiv.textContent = 'Livre - Clique para agendar';
+                    slotDiv.textContent = 'Livre';
+                    slotDiv.classList.add('slot-livre');
                     slotDiv.onclick = () => abrirModalAgendamento(hora);
                 }
                 row.appendChild(timeDiv);
                 row.appendChild(slotDiv);
                 container.appendChild(row);
             });
+
+            atualizarDashboard(); // Se o usuário tiver a tela config aberta, atualiza na hora
         }
 
         function abrirModalAgendamento(hora) {
@@ -428,15 +546,23 @@
 
         function fecharModal() {
             document.getElementById('modal-agendamento').style.display = 'none';
-            document.getElementById('modal-paciente').value = '';
+            document.getElementById('modal-paciente-nome').value = '';
+            document.getElementById('modal-paciente-whatsapp').value = '';
             document.getElementById('modal-procedimento').value = '';
         }
 
         async function confirmarAgendamento() {
-            const paciente = document.getElementById('modal-paciente').value;
+            const pacienteNome = document.getElementById('modal-paciente-nome').value.trim();
+            const pacienteWhats = document.getElementById('modal-paciente-whatsapp').value.trim();
             const procedimentoNome = document.getElementById('modal-procedimento').value;
 
-            if(!paciente || !procedimentoNome) return alert("Selecione paciente e procedimento.");
+            if(!pacienteNome || !procedimentoNome) return alert("Preencha o nome e selecione um procedimento.");
+
+            // INTEGRAÇÃO: Auto-cadastra paciente se for novo
+            const pacienteExiste = pacientesGlobais.find(p => p.nome.toLowerCase() === pacienteNome.toLowerCase());
+            if(!pacienteExiste) {
+                await salvarPaciente(pacienteNome, pacienteWhats); // Cadastra no banco e atualiza a lista oculta
+            }
 
             const procDetalhes = procedimentosGlobais.find(p => p.nome === procedimentoNome);
             const duracao = procDetalhes ? procDetalhes.duracao : 1;
@@ -448,37 +574,49 @@
                 const indexAtual = HORARIOS_AGENDA.indexOf(horaSelecionadaParaAgendamento);
                 const proximaHora = HORARIOS_AGENDA[indexAtual + 1];
 
-                if (!proximaHora || proximaHora === '12:00') {
-                    return alert("Sem tempo antes do almoço/fim do expediente para 2 horas.");
-                }
+                if (!proximaHora || proximaHora === '12:00') return alert("Sem tempo livre na sequência para 2 horas.");
+                const conflito = agendamentosDoDiaGlobais.find(a => a.hora === proximaHora);
+                if (conflito) return alert("O próximo horário já está ocupado.");
 
-                const { data: conflito } = await supabaseClient
-                    .from('agendamentos')
-                    .select('*')
-                    .eq('data_agendamento', dataSelecionadaStr)
-                    .eq('hora', proximaHora);
-                
-                if (conflito.length > 0) return alert("O próximo horário já está ocupado.");
-
-                agendamentosParaInserir.push({ id_agrupador: idAgrupador, data_agendamento: dataSelecionadaStr, hora: proximaHora, paciente_nome: paciente, procedimento_nome: procedimentoNome, is_continuacao: true });
+                agendamentosParaInserir.push({ id_agrupador: idAgrupador, data_agendamento: dataSelecionadaStr, hora: proximaHora, paciente_nome: pacienteNome, procedimento_nome: procedimentoNome, is_continuacao: true });
             }
 
-            agendamentosParaInserir.push({ id_agrupador: idAgrupador, data_agendamento: dataSelecionadaStr, hora: horaSelecionadaParaAgendamento, paciente_nome: paciente, procedimento_nome: procedimentoNome, is_continuacao: false });
+            agendamentosParaInserir.push({ id_agrupador: idAgrupador, data_agendamento: dataSelecionadaStr, hora: horaSelecionadaParaAgendamento, paciente_nome: pacienteNome, procedimento_nome: procedimentoNome, is_continuacao: false });
 
             const { error } = await supabaseClient.from('agendamentos').insert(agendamentosParaInserir);
             if(error) return alert("Erro ao agendar.");
 
             fecharModal();
-            gerarGradeAgenda(); 
+            await gerarGradeAgenda(); 
         }
 
         async function cancelarAgendamento(idAgrupador, event) {
             event.stopPropagation(); 
-            if(confirm(`Tem certeza que deseja cancelar este agendamento?`)) {
-                const { error } = await supabaseClient.from('agendamentos').delete().eq('id_agrupador', idAgrupador);
-                if(error) return alert("Erro ao cancelar.");
-                gerarGradeAgenda();
+            if(confirm(`Tem certeza que deseja desmarcar?`)) {
+                await supabaseClient.from('agendamentos').delete().eq('id_agrupador', idAgrupador);
+                await gerarGradeAgenda();
             }
+        }
+
+        // --- DASHBOARD FINANCEIRO ---
+        function atualizarDashboard() {
+            let faturamento = 0;
+            let atendimentos = 0;
+
+            // Filtra apenas agendamentos principais (exclui blocos de "continuação" para não somar o valor 2x)
+            const agendamentosPrincipais = agendamentosDoDiaGlobais.filter(a => !a.is_continuacao);
+            
+            agendamentosPrincipais.forEach(ag => {
+                const proc = procedimentosGlobais.find(p => p.nome === ag.procedimento_nome);
+                if(proc) {
+                    faturamento += proc.valor;
+                    atendimentos++;
+                }
+            });
+
+            document.getElementById('dash-faturamento-dia').textContent = `R$ ${faturamento.toFixed(2)}`;
+            document.getElementById('dash-atendimentos-dia').textContent = atendimentos;
+            document.getElementById('dash-data-ref').textContent = `Ref: ${formatarDataVisor(dataSelecionadaStr)}`;
         }
     </script>
 </body>
