@@ -143,9 +143,6 @@ create index if not exists pacientes_whatsapp_normalizado_idx
 create unique index if not exists agendamentos_data_hora_key
   on public.agendamentos (data_agendamento, hora);
 
-create index if not exists agendamentos_data_idx
-  on public.agendamentos (data_agendamento);
-
 create index if not exists agendamentos_agrupador_idx
   on public.agendamentos (id_agrupador);
 
@@ -154,6 +151,10 @@ create index if not exists agendamentos_paciente_id_idx
 
 create index if not exists agendamentos_procedimento_id_idx
   on public.agendamentos (procedimento_id);
+
+create index if not exists agendamentos_created_by_idx
+  on public.agendamentos (created_by)
+  where created_by is not null;
 
 create index if not exists procedimentos_status_nome_idx
   on public.procedimentos (status, nome);
@@ -196,6 +197,9 @@ create table if not exists private.access_invites (
 create index if not exists access_invites_profile_idx
   on private.access_invites (profile_id, expires_at)
   where used_at is null;
+
+create index if not exists access_invites_created_by_idx
+  on private.access_invites (created_by);
 
 create table if not exists private.public_booking_limits (
   contact_hash text primary key,
@@ -918,15 +922,19 @@ drop policy if exists procedimentos_public_select on public.procedimentos;
 create policy procedimentos_public_select
 on public.procedimentos
 for select
-to anon, authenticated
+to anon
 using (status = 'Ativo');
 
 drop policy if exists procedimentos_staff_select on public.procedimentos;
-create policy procedimentos_staff_select
+drop policy if exists procedimentos_authenticated_select on public.procedimentos;
+create policy procedimentos_authenticated_select
 on public.procedimentos
 for select
 to authenticated
-using ((select private.is_active_staff()));
+using (
+  status = 'Ativo'
+  or (select private.is_active_staff())
+);
 
 drop policy if exists procedimentos_insert_secure on public.procedimentos;
 create policy procedimentos_insert_secure
