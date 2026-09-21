@@ -1,1049 +1,315 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lumina's Clínica Estética</title>
-    
-    <!-- PWA META TAGS -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1a1a1a">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2602/2602052.png">
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
-    
-    <style>
-        :root { --bg-color: #f4f4f4; --text-color: #1a1a1a; --sidebar-bg: #ffffff; --border-color: #cccccc; --hover-bg: #e0e0e0; --input-border: #999999; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        
-        /* Base Body - Ajuste para evitar corte no mobile */
-        body { background-color: var(--bg-color); color: var(--text-color); min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow-x: hidden; }
-
-        /* Login */
-        #login-screen { background: var(--sidebar-bg); padding: 40px; border-radius: 8px; border: 1px solid var(--border-color); width: 90%; max-width: 400px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin: 20px auto; }
-        #login-screen h1 { margin-bottom: 20px; font-size: 1.5rem; }
-        .input-group { margin-bottom: 15px; text-align: left; }
-        .input-group label { display: block; margin-bottom: 5px; font-size: 0.9rem; font-weight: bold; }
-        .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 10px; border: 1px solid var(--input-border); border-radius: 4px; font-size: 1rem; background: #fff; font-family: inherit; }
-        .input-group textarea { resize: vertical; min-height: 80px; }
-        
-        button.btn-primary { width: 100%; background-color: var(--text-color); color: var(--sidebar-bg); border: none; padding: 12px; font-size: 1rem; border-radius: 4px; cursor: pointer; transition: opacity 0.2s; margin-top: 10px; }
-        button.btn-primary:hover { opacity: 0.8; }
-        .error-msg { color: #d32f2f; font-size: 0.85rem; margin-top: 10px; display: none; }
-
-        /* App Principal e Menu */
-        #app-screen { display: none; width: 100vw; height: 100vh; flex-direction: row; overflow: hidden; }
-        
-        aside { width: 250px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; height: 100%; flex-shrink: 0; }
-        .logo { text-align: center; font-size: 1.2rem; font-weight: bold; padding: 20px 0; border-bottom: 1px solid var(--border-color); }
-        
-        nav { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding-top: 10px; }
-        nav button { width: 100%; background: none; border: none; padding: 15px 20px; text-align: left; font-size: 1rem; cursor: pointer; color: var(--text-color); transition: background 0.2s; display: flex; align-items: center; gap: 10px; }
-        nav button:hover { background-color: var(--hover-bg); }
-        nav button.active { background-color: var(--text-color); color: var(--bg-color); font-weight: bold; }
-        
-        #btn-logout { margin-top: auto; border-top: 1px solid var(--border-color); color: #d32f2f !important; }
-        
-        main { flex: 1; padding: 30px; overflow-y: auto; position: relative; scroll-behavior: smooth; background: var(--bg-color); }
-        .view { display: none; background: var(--sidebar-bg); padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); }
-        .view.active { display: block; }
-        h2 { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
-
-        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
-        .form-row .input-group { flex: 1; margin-bottom: 0; }
-        .checkbox-group { margin-top: 15px; border: 1px solid var(--border-color); padding: 15px; border-radius: 4px; }
-        .checkbox-group h4 { margin-bottom: 10px; }
-        .checkbox-list { display: flex; flex-wrap: wrap; gap: 10px; }
-        .checkbox-list label { display: block; cursor: pointer; width: 45%; margin-bottom: 5px; }
-
-        /* Agenda */
-        .agenda-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
-        .agenda-header h2 { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        .date-controls { display: flex; gap: 10px; align-items: center; }
-        .date-controls button { background: var(--bg-color); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .date-controls input[type="date"] { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; }
-
-        .agenda-grid { display: flex; flex-direction: column; gap: 8px; }
-        .agenda-row { display: flex; align-items: center; }
-        .agenda-time { width: 80px; padding: 15px 0; font-weight: bold; text-align: center; }
-        .agenda-slot { flex: 1; padding: 15px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 500; transition: opacity 0.2s; }
-        .agenda-slot:hover { opacity: 0.8; }
-        
-        .slot-livre { background-color: #4CAF50; color: white; }
-        .slot-ocupado { background-color: #FF9800; color: white; cursor: default; }
-        .slot-continuacao { background-color: #FFB74D; color: white; cursor: default; }
-        .slot-almoco { background-color: #9e9e9e; color: white; cursor: not-allowed; }
-        
-        .btn-cancelar { background: rgba(0,0,0,0.2); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
-        .btn-cancelar:hover { background: rgba(0,0,0,0.4); }
-        .btn-acao { background: var(--text-color); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem; margin-right: 5px; margin-bottom: 5px;}
-        .btn-acao.danger { background: #d32f2f; }
-
-        /* Tabelas Responsivas */
-        .table-responsive { width: 100%; overflow-x: auto; border-radius: 6px; border: 1px solid var(--border-color); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.95rem; min-width: 600px; }
-        th, td { padding: 12px; border-bottom: 1px solid var(--border-color); text-align: left; }
-        th { background-color: var(--bg-color); font-weight: 600; }
-        tr:last-child td { border-bottom: none; }
-
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; padding: 10px; }
-        .modal-content { background: var(--sidebar-bg); padding: 25px; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
-        .close-btn { float: right; cursor: pointer; font-size: 1.5rem; font-weight: bold; line-height: 1; color: #666; }
-
-        /* Dashboard & Sub-Tabs */
-        .dashboard-cards { display: flex; gap: 20px; margin-bottom: 30px; }
-        .card { flex: 1; background: var(--hover-bg); padding: 20px; border-radius: 8px; text-align: center; }
-        .card h3 { margin-bottom: 10px; font-size: 1rem; color: #666; }
-        .card .valor { font-size: 2rem; font-weight: bold; color: var(--text-color); }
-
-        .sub-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); overflow-x: auto; white-space: nowrap; padding-bottom: 5px; }
-        .sub-tab-btn { background: none; border: none; padding: 10px 15px; font-size: 0.95rem; cursor: pointer; border-bottom: 2px solid transparent; color: #666; }
-        .sub-tab-btn.active { color: var(--text-color); font-weight: bold; border-bottom: 2px solid var(--text-color); }
-        .sub-tab-content { display: none; }
-        .sub-tab-content.active { display: block; }
-        
-        .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background: #e0e0e0; color: #333; }
-        .badge.ativo { background: #4CAF50; color: white; }
-
-        /* Anamnese */
-        .anamnese-bloco { background: var(--hover-bg); padding: 15px; border-radius: 6px; margin-bottom: 15px; }
-        .anamnese-pergunta { font-weight: bold; margin-bottom: 10px; font-size: 0.95rem; }
-        .anamnese-opcoes { display: flex; gap: 15px; margin-bottom: 10px; }
-        .anamnese-opcoes label { cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 0.9rem;}
-        .anamnese-detalhe { width: 100%; padding: 8px; border: 1px solid var(--input-border); border-radius: 4px; font-size: 0.85rem; background: #fff;}
-
-        /* =========================================
-           ADAPTAÇÃO PARA DISPOSITIVOS MÓVEIS (PWA)
-           ========================================= */
-        @media (max-width: 768px) {
-            body { align-items: flex-start; } /* Previne corte do login */
-            #login-screen { margin-top: 10vh; padding: 30px 20px; }
-            
-            /* Estrutura Principal */
-            #app-screen { flex-direction: column; height: 100dvh; }
-            aside { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border-color); padding: 0; flex-shrink: 0; }
-            .logo { padding: 15px 0; font-size: 1.1rem; border-bottom: 1px solid var(--border-color); }
-            
-            /* Menu de Navegação Horizontal */
-            nav { flex-direction: row; overflow-x: auto; padding: 10px; gap: 8px; align-items: center; border-bottom: none; }
-            nav::-webkit-scrollbar { height: 4px; }
-            nav::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-            nav button { flex: 0 0 auto; width: auto; padding: 10px 15px; font-size: 0.9rem; border-radius: 6px; border: 1px solid transparent; justify-content: center; }
-            nav button.active { border-color: var(--text-color); }
-            
-            /* Reposiciona o botão "Sair" de forma segura no celular */
-            #btn-logout { margin-top: 0; border-top: none; border: 1px solid #ffcccc; background: #fff5f5; border-radius: 6px; }
-
-            /* Ajustes de Espaçamento das Telas */
-            main { padding: 15px; }
-            .view { padding: 20px 15px; }
-            h2 { font-size: 1.2rem; }
-            
-            /* Agenda Mobile */
-            .agenda-header { flex-direction: column; align-items: flex-start; gap: 15px; }
-            .date-controls { width: 100%; justify-content: space-between; }
-            .agenda-time { width: 60px; font-size: 0.85rem; padding: 15px 5px; }
-            .agenda-slot { padding: 12px; font-size: 0.9rem; flex-direction: column; align-items: flex-start; gap: 10px; }
-            .btn-cancelar { width: 100%; padding: 10px; }
-            
-            /* Formulários em Coluna */
-            .form-row { flex-direction: column; gap: 12px; margin-bottom: 12px; }
-            .checkbox-list label { width: 100%; }
-            .dashboard-cards { flex-direction: column; gap: 12px; }
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1f1f1f">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://xwtkfdfhmaaraodrusxx.supabase.co wss://xwtkfdfhmaaraodrusxx.supabase.co; style-src 'self'; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <title>Lumina's Clínica Estética</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.75.1" integrity="sha384-oKMgGe+iV6GiXAwVOAWrwx8rXSvyRUGT8R5Wl8Jas37cmI7i51qrvFUp+D/wwuf5" crossorigin="anonymous" defer></script>
+  <script src="config.js" defer></script>
+  <script src="app.js" defer></script>
 </head>
-<body>
+<body class="auth-page">
+  <section id="login-screen" class="auth-card" aria-labelledby="login-title">
+    <h1 id="login-title">✨ Lumina's Estética</h1>
+    <p class="muted">Área segura da equipe</p>
 
-    <div id="login-screen">
-        <h1>✨ Lumina's Estética</h1>
-        <div class="input-group"><label>Nickname</label><input type="text" id="login-nick"></div>
-        <div class="input-group"><label>Senha</label><input type="password" id="login-senha" maxlength="8"></div>
-        <button class="btn-primary" onclick="fazerLogin()">Entrar</button>
-        <p id="login-error" class="error-msg">Credenciais inválidas ou usuário inativo.</p>
-    </div>
+    <form id="login-form">
+      <div class="input-group">
+        <label for="login-email">E-mail</label>
+        <input type="email" id="login-email" autocomplete="username" required>
+      </div>
+      <div class="input-group">
+        <label for="login-password">Senha</label>
+        <input type="password" id="login-password" autocomplete="current-password" minlength="8" required>
+      </div>
+      <button class="btn-primary btn-block" id="login-submit" type="submit">Entrar</button>
+    </form>
+    <p id="login-message" class="status-message" role="status" aria-live="polite"></p>
+    <button class="btn-link btn-block" id="show-signup" type="button">Ativar meu primeiro acesso</button>
+    <button class="btn-link btn-block" id="forgot-password" type="button">Esqueci minha senha</button>
 
-    <div id="app-screen">
-        <aside>
-            <div class="logo">Lumina's Estética</div>
-            <nav id="main-nav">
-                <button onclick="changeView('agenda')" id="menu-agenda" class="menu-item active">📅 Agenda</button>
-                <button onclick="changeView('pacientes')" id="menu-pacientes" class="menu-item">👥 Pacientes</button>
-                <button onclick="changeView('procedimentos')" id="menu-procedimentos" class="menu-item">✨ Procedimentos</button>
-                <button onclick="changeView('documentos')" id="menu-documentos" class="menu-item">📄 Documentos</button>
-                <button onclick="changeView('profissionais')" id="menu-profissionais" class="menu-item">👩‍⚕️ Profissionais</button>
-                <button onclick="changeView('configuracoes')" id="menu-configuracoes" class="menu-item">⚙️ Configurações</button>
-                <!-- Botão Sair reposicionado dentro do NAV para rolar junto no mobile -->
-                <button id="btn-logout" onclick="fazerLogout()">🚪 Sair</button>
-            </nav>
-        </aside>
-
-        <main id="main-content">
-            <!-- AGENDA -->
-            <div id="agenda" class="view active">
-                <div class="agenda-header">
-                    <h2>📅 Agenda</h2>
-                    <div class="date-controls">
-                        <button onclick="mudarData(-1)">◀</button>
-                        <input type="date" id="data-agenda" onchange="selecionarDataPeloInput()">
-                        <button onclick="mudarData(1)">▶</button>
-                    </div>
-                </div>
-                <div class="agenda-grid" id="grade-agenda"></div>
-            </div>
-
-            <!-- PACIENTES -->
-            <div id="pacientes" class="view">
-                <h2>👥 Cadastro de Pacientes</h2>
-                <div class="form-row">
-                    <div class="input-group"><label>Nome Completo</label><input type="text" id="pac-nome"></div>
-                    <div class="input-group"><label>WhatsApp</label><input type="text" id="pac-whatsapp" placeholder="(XX) 9XXXX-XXXX"></div>
-                </div>
-                <button class="btn-primary" style="width: 100%; max-width: 250px; padding: 10px;" onclick="salvarPaciente()">Cadastrar Paciente</button>
-                
-                <h3 style="margin-top: 40px; margin-bottom: 10px;">📋 Lista de Pacientes</h3>
-                <div class="table-responsive">
-                    <table><thead><tr><th>Nome</th><th>WhatsApp</th></tr></thead><tbody id="tabela-pacientes"></tbody></table>
-                </div>
-            </div>
-
-            <!-- PROCEDIMENTOS -->
-            <div id="procedimentos" class="view">
-                <h2>✨ Catálogo de Procedimentos</h2>
-                <input type="hidden" id="proc-id-edit">
-                
-                <div class="form-row">
-                    <div class="input-group"><label>Nome do Serviço</label><input type="text" id="proc-nome" placeholder="Ex: Peeling de Diamante"></div>
-                    <div class="input-group"><label>Categoria</label>
-                        <select id="proc-categoria">
-                            <option value="Avaliações">Avaliações</option><option value="Corporal">Corporal</option>
-                            <option value="Endolaser">Endolaser</option><option value="Facial">Facial</option>
-                            <option value="Laser">Laser</option><option value="Massagens">Massagens</option>
-                            <option value="Velaryan">Velaryan</option><option value="Outros">Outros</option>
-                        </select>
-                    </div>
-                    <div class="input-group"><label>Status</label><select id="proc-status"><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option></select></div>
-                </div>
-                <div class="form-row">
-                    <div class="input-group"><label>Duração (Minutos)</label>
-                        <select id="proc-duracao">
-                            <option value="30">30 Minutos</option><option value="45">45 Minutos</option>
-                            <option value="60" selected>60 Minutos (1 Hora)</option>
-                            <option value="90">90 Minutos (1h30)</option><option value="120">120 Minutos (2 Horas)</option>
-                        </select>
-                    </div>
-                    <div class="input-group"><label>Valor (R$)</label><input type="number" id="proc-valor" placeholder="Ex: 150"></div>
-                    <div class="input-group"><label>Especialidade</label><input type="text" id="proc-especialidade" placeholder="Ex: Estética Facial"></div>
-                </div>
-                <div class="form-row">
-                    <div class="input-group"><label>Descritivo do Procedimento</label><textarea id="proc-descricao" placeholder="Detalhes..."></textarea></div>
-                    <div class="input-group"><label>Benefícios</label><textarea id="proc-beneficios" placeholder="Ex: Reduz flacidez..."></textarea></div>
-                </div>
-                <div class="form-row">
-                    <div class="input-group"><label>Cuidados Pós</label><textarea id="proc-cuidados" placeholder="Ex: Evitar sol..."></textarea></div>
-                    <div class="input-group">
-                        <label>Tempo de Retorno</label><input type="text" id="proc-retorno" placeholder="Ex: 15 dias">
-                        <label style="margin-top:10px;">Obs. de Preço</label><input type="text" id="proc-obs-preco" placeholder="Ex: Avaliação é descontada.">
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn-primary" id="btn-salvar-proc" style="width: auto; flex: 1; padding: 10px;" onclick="salvarProcedimento()">Salvar Procedimento</button>
-                    <button class="btn-primary" id="btn-cancelar-edit-proc" style="display:none; background:#999; width: auto; flex: 1; padding: 10px;" onclick="cancelarEdicaoProcedimento()">Cancelar Edição</button>
-                </div>
-
-                <h3 style="margin-top: 40px; margin-bottom: 10px;">📋 Serviços Ativos</h3>
-                <div class="table-responsive">
-                    <table>
-                        <thead><tr><th>Categoria</th><th>Procedimento</th><th>Duração</th><th>Valor</th><th>Ações</th></tr></thead>
-                        <tbody id="tabela-procedimentos-ativos"></tbody>
-                    </table>
-                </div>
-
-                <h3 style="margin-top: 40px; margin-bottom: 10px; color: #d32f2f;">🗑️ Lixeira (Inativos)</h3>
-                <div class="table-responsive">
-                    <table>
-                        <thead><tr><th>Categoria</th><th>Procedimento</th><th>Duração</th><th>Valor</th><th>Ações</th></tr></thead>
-                        <tbody id="tabela-procedimentos-inativos"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- DOCUMENTOS -->
-            <div id="documentos" class="view">
-                <h2>📄 Central de Documentos</h2>
-                <div class="sub-tabs">
-                    <button class="sub-tab-btn active" onclick="mudarAbaDocumento('doc-anamnese', this)">Anamneses</button>
-                    <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-prontuario', this)">Prontuários</button>
-                    <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-receita', this)">Receitas</button>
-                    <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-termo', this)">Termos</button>
-                    <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-atestado', this)">Atestados</button>
-                </div>
-                
-                <div id="doc-anamnese" class="sub-tab-content active">
-                    <div class="form-row">
-                        <div class="input-group">
-                            <label>Selecione o Paciente</label>
-                            <select id="anamnese-paciente"><option value="">Selecione um paciente...</option></select>
-                        </div>
-                        <div class="input-group">
-                            <label>Selecione o Procedimento</label>
-                            <select id="anamnese-procedimento" onchange="gerarFormularioAnamnese()"><option value="">Selecione um procedimento...</option></select>
-                        </div>
-                    </div>
-                    
-                    <div id="anamnese-dinamica-container" style="margin-top: 10px;">
-                        <p style="color: #666; font-style: italic;">Selecione um procedimento acima para carregar as perguntas.</p>
-                    </div>
-                    
-                    <button class="btn-primary" id="btn-salvar-anamnese" style="display: none; width: 100%; max-width: 300px; padding: 10px;" onclick="salvarAnamnese()">💾 Salvar Anamnese</button>
-
-                    <h3 style="margin-top: 50px; margin-bottom: 10px;">📋 Histórico de Anamneses</h3>
-                    <div class="table-responsive">
-                        <table>
-                            <thead><tr><th>Data</th><th>Paciente</th><th>Procedimento</th><th>Ações</th></tr></thead>
-                            <tbody id="tabela-anamneses"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div id="doc-prontuario" class="sub-tab-content"><p style="color: #666;">Módulo de Prontuários em construção.</p></div>
-                <div id="doc-receita" class="sub-tab-content"><p style="color: #666;">Módulo de Receitas em construção.</p></div>
-                <div id="doc-termo" class="sub-tab-content"><p style="color: #666;">Módulo de Termos em construção.</p></div>
-                <div id="doc-atestado" class="sub-tab-content"><p style="color: #666;">Módulo de Atestados em construção.</p></div>
-            </div>
-
-            <!-- PROFISSIONAIS -->
-            <div id="profissionais" class="view">
-                <h2>👩‍⚕️ Cadastro de Profissional</h2>
-                <input type="hidden" id="cad-id-edit">
-                <div class="form-row">
-                    <div class="input-group"><label>Nome Completo</label><input type="text" id="cad-nome"></div>
-                    <div class="input-group"><label>Especialidade</label><input type="text" id="cad-especialidade"></div>
-                </div>
-                <div class="form-row">
-                    <div class="input-group"><label>Nickname</label><input type="text" id="cad-nick"></div>
-                    <div class="input-group"><label>Senha (8 dígitos)</label><input type="text" id="cad-senha" maxlength="8"></div>
-                </div>
-                <div class="checkbox-group">
-                    <h4>Permissões de Acesso:</h4>
-                    <div class="checkbox-list">
-                        <label><input type="checkbox" id="perm-agenda" checked> 📅 Agenda</label>
-                        <label><input type="checkbox" id="perm-pacientes" checked> 👥 Pacientes</label>
-                        <label><input type="checkbox" id="perm-procedimentos"> ✨ Procedimentos</label>
-                        <label><input type="checkbox" id="perm-documentos"> 📄 Documentos</label>
-                        <label><input type="checkbox" id="perm-profissionais"> 👩‍⚕️ Profissionais</label>
-                        <label><input type="checkbox" id="perm-configuracoes"> ⚙️ Configurações</label>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn-primary" id="btn-salvar-prof" style="width: auto; flex: 1; padding: 10px;" onclick="salvarProfissional()">Salvar Profissional</button>
-                    <button class="btn-primary" id="btn-cancelar-edit" style="display:none; background:#999; width: auto; flex: 1; padding: 10px;" onclick="cancelarEdicaoProfissional()">Cancelar Edição</button>
-                </div>
-
-                <h3 style="margin-top: 40px; margin-bottom: 10px;">📋 Profissionais Ativos</h3>
-                <div class="table-responsive">
-                    <table><thead><tr><th>Nome</th><th>Especialidade</th><th>Nick</th><th>Ações</th></tr></thead><tbody id="tabela-profissionais-ativos"></tbody></table>
-                </div>
-
-                <h3 style="margin-top: 40px; margin-bottom: 10px; color: #d32f2f;">🗑️ Lixeira (Inativos)</h3>
-                <div class="table-responsive">
-                    <table><thead><tr><th>Nome</th><th>Especialidade</th><th>Nick</th><th>Ações</th></tr></thead><tbody id="tabela-profissionais-inativos"></tbody></table>
-                </div>
-            </div>
-
-            <!-- CONFIGURAÇÕES -->
-            <div id="configuracoes" class="view">
-                <h2>⚙️ Configurações da Clínica</h2>
-                <div class="dashboard-cards">
-                    <div class="card">
-                        <h3>Faturamento do Dia Selecionado</h3>
-                        <div class="valor" id="dash-faturamento-dia">R$ 0,00</div>
-                        <p style="font-size: 0.8rem; margin-top:5px;" id="dash-data-ref">Ref: Hoje</p>
-                    </div>
-                    <div class="card">
-                        <h3>Atendimentos no Dia</h3>
-                        <div class="valor" id="dash-atendimentos-dia">0</div>
-                    </div>
-                </div>
-
-                <h3 style="margin-bottom: 15px; margin-top: 30px; border-bottom: 1px solid var(--border-color); padding-bottom:5px;">🕒 Horário da Agenda</h3>
-                <div class="form-row">
-                    <div class="input-group"><label>Abertura</label><input type="time" id="conf-abertura"></div>
-                    <div class="input-group"><label>Fechamento</label><input type="time" id="conf-fechamento"></div>
-                    <div class="input-group"><label>Almoço</label><input type="time" id="conf-almoco"></div>
-                </div>
-                <button class="btn-primary" style="width: 100%; max-width: 250px; padding: 10px;" onclick="salvarConfiguracoesHorario()">Sincronizar Agenda</button>
-            </div>
-        </main>
-    </div>
-
-    <!-- MODAL AGENDAMENTO -->
-    <div id="modal-agendamento" class="modal-overlay">
-        <div class="modal-content">
-            <span class="close-btn" onclick="fecharModal()">&times;</span>
-            <h2 style="border-bottom: none; margin-bottom: 5px;">📅 Agendar</h2>
-            <p id="modal-horario" style="margin-bottom: 20px; font-weight: bold; color: #666;"></p>
-
-            <div class="input-group">
-                <label>Paciente</label>
-                <input list="lista-pacientes" id="modal-paciente-nome" placeholder="Ex: Maria Clara">
-                <datalist id="lista-pacientes"></datalist>
-            </div>
-            <div class="input-group">
-                <label>WhatsApp (Se novo paciente)</label>
-                <input type="tel" id="modal-paciente-whatsapp" placeholder="(Opcional)">
-            </div>
-            <div class="input-group">
-                <label>Procedimento</label>
-                <select id="modal-procedimento"><option value="">Selecione um procedimento...</option></select>
-            </div>
-            <button class="btn-primary" onclick="confirmarAgendamento()">Confirmar</button>
+    <section id="signup-panel" class="auth-panel hidden" aria-labelledby="signup-title">
+      <h2 id="signup-title">Criar acesso seguro</h2>
+      <p class="muted small">Use seu e-mail e uma senha nova. Depois, vincule seu perfil com o código recebido ou com o acesso antigo.</p>
+      <form id="signup-form">
+        <div class="input-group">
+          <label for="signup-email">E-mail</label>
+          <input type="email" id="signup-email" autocomplete="username" required>
         </div>
-    </div>
-
-    <!-- MODAL VISUALIZAR ANAMNESE -->
-    <div id="modal-view-anamnese" class="modal-overlay">
-        <div class="modal-content">
-            <span class="close-btn" onclick="document.getElementById('modal-view-anamnese').style.display='none'">&times;</span>
-            <h2 style="border-bottom: none; margin-bottom: 5px;">📄 Resumo da Anamnese</h2>
-            <p id="view-anamnese-info" style="margin-bottom: 20px; font-weight: bold; color: #666;"></p>
-            <div id="view-anamnese-respostas" style="background: var(--bg-color); padding: 15px; border-radius: 6px; font-size: 0.9rem;"></div>
+        <div class="input-group">
+          <label for="signup-password">Nova senha</label>
+          <input type="password" id="signup-password" autocomplete="new-password" minlength="8" required>
         </div>
+        <button class="btn-primary btn-block" id="signup-submit" type="submit">Criar acesso</button>
+      </form>
+      <p id="signup-message" class="status-message" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="claim-panel" class="auth-panel hidden" aria-labelledby="claim-title">
+      <h2 id="claim-title">Vincular perfil profissional</h2>
+      <p id="claim-user" class="muted small"></p>
+      <form id="invite-claim-form">
+        <div class="input-group">
+          <label for="claim-code">Código de ativação</label>
+          <input type="text" id="claim-code" autocomplete="one-time-code" maxlength="32" placeholder="Código fornecido pela administradora">
+        </div>
+        <button class="btn-primary btn-block" type="submit">Usar código</button>
+      </form>
+      <div class="auth-divider">ou, para perfis antigos</div>
+      <form id="legacy-claim-form">
+        <div class="input-group">
+          <label for="claim-nick">Nickname antigo</label>
+          <input type="text" id="claim-nick" autocomplete="username" maxlength="80">
+        </div>
+        <div class="input-group">
+          <label for="claim-password">Senha antiga</label>
+          <input type="password" id="claim-password" autocomplete="current-password" maxlength="128">
+        </div>
+        <button class="btn-secondary btn-block" type="submit">Vincular acesso antigo</button>
+      </form>
+      <p id="claim-message" class="status-message" role="status" aria-live="polite"></p>
+      <button class="btn-link btn-block" id="claim-logout" type="button">Sair deste e-mail</button>
+    </section>
+
+    <section id="recovery-panel" class="auth-panel hidden" aria-labelledby="recovery-title">
+      <h2 id="recovery-title">Definir nova senha</h2>
+      <form id="recovery-form">
+        <div class="input-group">
+          <label for="recovery-password">Nova senha</label>
+          <input type="password" id="recovery-password" autocomplete="new-password" minlength="8" required>
+        </div>
+        <button class="btn-primary btn-block" id="recovery-submit" type="submit">Salvar nova senha</button>
+      </form>
+      <p id="recovery-message" class="status-message" role="status" aria-live="polite"></p>
+    </section>
+  </section>
+
+  <div id="app-screen">
+    <aside class="sidebar">
+      <div class="logo">Lumina's Estética</div>
+      <div id="user-summary" class="user-summary"></div>
+      <nav class="main-nav" id="main-nav" aria-label="Menu principal">
+        <button type="button" data-view="agenda" id="menu-agenda">📅 Agenda</button>
+        <button type="button" data-view="pacientes" id="menu-pacientes">👥 Pacientes</button>
+        <button type="button" data-view="procedimentos" id="menu-procedimentos">✨ Procedimentos</button>
+        <button type="button" data-view="documentos" id="menu-documentos">📄 Documentos</button>
+        <button type="button" data-view="profissionais" id="menu-profissionais">👩‍⚕️ Profissionais</button>
+        <button type="button" data-view="configuracoes" id="menu-configuracoes">⚙️ Configurações</button>
+        <button type="button" id="btn-logout">🚪 Sair</button>
+      </nav>
+    </aside>
+
+    <main id="main-content" class="main-content">
+      <section id="agenda" class="view" aria-labelledby="agenda-title">
+        <div class="agenda-header">
+          <h2 id="agenda-title">📅 Agenda</h2>
+          <div class="date-controls">
+            <button type="button" id="date-prev" aria-label="Dia anterior">◀</button>
+            <input type="date" id="data-agenda" aria-label="Data da agenda">
+            <button type="button" id="date-next" aria-label="Próximo dia">▶</button>
+          </div>
+        </div>
+        <p id="agenda-message" class="status-message" role="status" aria-live="polite"></p>
+        <div class="agenda-grid" id="grade-agenda"></div>
+      </section>
+
+      <section id="pacientes" class="view" aria-labelledby="pacientes-title">
+        <h2 id="pacientes-title">👥 Cadastro de Pacientes</h2>
+        <form id="patient-form">
+          <div class="form-row">
+            <div class="input-group">
+              <label for="pac-nome">Nome completo</label>
+              <input type="text" id="pac-nome" maxlength="120" required>
+            </div>
+            <div class="input-group">
+              <label for="pac-whatsapp">WhatsApp</label>
+              <input type="tel" id="pac-whatsapp" maxlength="24" placeholder="(XX) 9XXXX-XXXX">
+            </div>
+          </div>
+          <button class="btn-primary" type="submit">Cadastrar paciente</button>
+        </form>
+        <p id="patient-message" class="status-message" role="status" aria-live="polite"></p>
+        <h3 class="section-title">📋 Lista de pacientes</h3>
+        <div class="table-responsive">
+          <table>
+            <thead><tr><th>Nome</th><th>WhatsApp</th></tr></thead>
+            <tbody id="tabela-pacientes"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="procedimentos" class="view" aria-labelledby="procedimentos-title">
+        <h2 id="procedimentos-title">✨ Catálogo de Procedimentos</h2>
+        <form id="procedure-form">
+          <input type="hidden" id="proc-id-edit">
+          <div class="form-row">
+            <div class="input-group">
+              <label for="proc-nome">Nome do serviço</label>
+              <input type="text" id="proc-nome" maxlength="160" required>
+            </div>
+            <div class="input-group">
+              <label for="proc-categoria">Categoria</label>
+              <select id="proc-categoria">
+                <option>Avaliações</option><option>Corporal</option><option>Endolaser</option>
+                <option>Facial</option><option>Laser</option><option>Massagens</option>
+                <option>Velaryan</option><option>Outros</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="proc-status">Status</label>
+              <select id="proc-status"><option>Ativo</option><option>Inativo</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="input-group">
+              <label for="proc-duracao">Duração</label>
+              <select id="proc-duracao">
+                <option value="30">30 minutos</option><option value="45">45 minutos</option>
+                <option value="60" selected>60 minutos</option><option value="90">90 minutos</option>
+                <option value="120">120 minutos</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="proc-valor">Valor (R$)</label>
+              <input type="number" id="proc-valor" min="0" step="0.01">
+            </div>
+            <div class="input-group">
+              <label for="proc-especialidade">Especialidade</label>
+              <input type="text" id="proc-especialidade" maxlength="120">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="input-group"><label for="proc-descricao">Descrição</label><textarea id="proc-descricao" maxlength="2000"></textarea></div>
+            <div class="input-group"><label for="proc-beneficios">Benefícios</label><textarea id="proc-beneficios" maxlength="2000"></textarea></div>
+          </div>
+          <div class="form-row">
+            <div class="input-group"><label for="proc-cuidados">Cuidados pós</label><textarea id="proc-cuidados" maxlength="2000"></textarea></div>
+            <div class="input-group">
+              <label for="proc-retorno">Tempo de retorno</label><input type="text" id="proc-retorno" maxlength="120">
+              <label for="proc-obs-preco">Observação de preço</label><input type="text" id="proc-obs-preco" maxlength="300">
+            </div>
+          </div>
+          <div class="button-row">
+            <button class="btn-primary" id="btn-salvar-proc" type="submit">Salvar procedimento</button>
+            <button class="btn-secondary hidden" id="btn-cancelar-edit-proc" type="button">Cancelar edição</button>
+          </div>
+        </form>
+        <p id="procedure-message" class="status-message" role="status" aria-live="polite"></p>
+        <h3 class="section-title">📋 Serviços ativos</h3>
+        <div class="table-responsive"><table><thead><tr><th>Categoria</th><th>Procedimento</th><th>Duração</th><th>Valor</th><th>Ações</th></tr></thead><tbody id="tabela-procedimentos-ativos"></tbody></table></div>
+        <h3 class="section-title danger">🗑️ Lixeira</h3>
+        <div class="table-responsive"><table><thead><tr><th>Categoria</th><th>Procedimento</th><th>Duração</th><th>Valor</th><th>Ações</th></tr></thead><tbody id="tabela-procedimentos-inativos"></tbody></table></div>
+      </section>
+
+      <section id="documentos" class="view" aria-labelledby="documentos-title">
+        <h2 id="documentos-title">📄 Central de Documentos</h2>
+        <div class="sub-tabs" role="tablist">
+          <button class="sub-tab-btn active" type="button" data-document-tab="doc-anamnese">Anamneses</button>
+          <button class="sub-tab-btn" type="button" data-document-tab="doc-prontuario">Prontuários</button>
+          <button class="sub-tab-btn" type="button" data-document-tab="doc-receita">Receitas</button>
+          <button class="sub-tab-btn" type="button" data-document-tab="doc-termo">Termos</button>
+          <button class="sub-tab-btn" type="button" data-document-tab="doc-atestado">Atestados</button>
+        </div>
+        <div id="doc-anamnese" class="sub-tab-content active">
+          <div class="form-row">
+            <div class="input-group"><label for="anamnese-paciente">Paciente</label><select id="anamnese-paciente"><option value="">Selecione...</option></select></div>
+            <div class="input-group"><label for="anamnese-procedimento">Procedimento</label><select id="anamnese-procedimento"><option value="">Selecione...</option></select></div>
+          </div>
+          <div id="anamnese-dinamica-container"><p class="muted">Selecione um procedimento para carregar as perguntas.</p></div>
+          <button class="btn-primary hidden" id="btn-salvar-anamnese" type="button">💾 Salvar anamnese</button>
+          <p id="document-message" class="status-message" role="status" aria-live="polite"></p>
+          <h3 class="section-title">📋 Histórico de anamneses</h3>
+          <div class="table-responsive"><table><thead><tr><th>Data</th><th>Paciente</th><th>Procedimento</th><th>Ações</th></tr></thead><tbody id="tabela-anamneses"></tbody></table></div>
+        </div>
+        <div id="doc-prontuario" class="sub-tab-content"><p class="muted">Módulo de prontuários em construção.</p></div>
+        <div id="doc-receita" class="sub-tab-content"><p class="muted">Módulo de receitas em construção.</p></div>
+        <div id="doc-termo" class="sub-tab-content"><p class="muted">Módulo de termos em construção.</p></div>
+        <div id="doc-atestado" class="sub-tab-content"><p class="muted">Módulo de atestados em construção.</p></div>
+      </section>
+
+      <section id="profissionais" class="view" aria-labelledby="profissionais-title">
+        <h2 id="profissionais-title">👩‍⚕️ Cadastro de Profissional</h2>
+        <form id="professional-form">
+          <input type="hidden" id="cad-id-edit">
+          <div class="form-row">
+            <div class="input-group"><label for="cad-nome">Nome completo</label><input type="text" id="cad-nome" maxlength="120" required></div>
+            <div class="input-group"><label for="cad-especialidade">Especialidade</label><input type="text" id="cad-especialidade" maxlength="120"></div>
+            <div class="input-group"><label for="cad-nick">Nickname</label><input type="text" id="cad-nick" maxlength="80" required></div>
+          </div>
+          <p class="muted small">Senhas não são cadastradas aqui. Ao criar o perfil, o sistema gera um código de ativação de uso único.</p>
+          <div class="checkbox-group">
+            <h3>Permissões de acesso</h3>
+            <div class="checkbox-list">
+              <label><input type="checkbox" id="perm-agenda" checked> 📅 Agenda</label>
+              <label><input type="checkbox" id="perm-pacientes" checked> 👥 Pacientes</label>
+              <label><input type="checkbox" id="perm-procedimentos"> ✨ Procedimentos</label>
+              <label><input type="checkbox" id="perm-documentos"> 📄 Documentos</label>
+              <label><input type="checkbox" id="perm-profissionais"> 👩‍⚕️ Profissionais</label>
+              <label><input type="checkbox" id="perm-configuracoes"> ⚙️ Configurações</label>
+            </div>
+          </div>
+          <div class="button-row">
+            <button class="btn-primary" id="btn-salvar-prof" type="submit">Salvar profissional</button>
+            <button class="btn-secondary hidden" id="btn-cancelar-edit" type="button">Cancelar edição</button>
+          </div>
+        </form>
+        <p id="professional-message" class="status-message" role="status" aria-live="polite"></p>
+        <div id="activation-box" class="activation-box hidden" aria-live="polite">
+          <strong>Código de ativação (válido por 7 dias)</strong><br>
+          <code id="activation-code" class="activation-code"></code><br>
+          <span class="small">Copie agora: por segurança, o código não será exibido novamente.</span>
+          <button class="btn-secondary" id="copy-activation-code" type="button">Copiar código</button>
+        </div>
+        <h3 class="section-title">📋 Profissionais ativos</h3>
+        <div class="table-responsive"><table><thead><tr><th>Nome</th><th>Especialidade</th><th>Nick</th><th>Acesso</th><th>Ações</th></tr></thead><tbody id="tabela-profissionais-ativos"></tbody></table></div>
+        <h3 class="section-title danger">🗑️ Inativos</h3>
+        <div class="table-responsive"><table><thead><tr><th>Nome</th><th>Especialidade</th><th>Nick</th><th>Acesso</th><th>Ações</th></tr></thead><tbody id="tabela-profissionais-inativos"></tbody></table></div>
+      </section>
+
+      <section id="configuracoes" class="view" aria-labelledby="configuracoes-title">
+        <h2 id="configuracoes-title">⚙️ Configurações da Clínica</h2>
+        <div class="dashboard-cards">
+          <div class="card"><h3>Faturamento do dia selecionado</h3><div class="card-value" id="dash-faturamento-dia">R$ 0,00</div><p id="dash-data-ref" class="small muted">Ref: hoje</p></div>
+          <div class="card"><h3>Atendimentos no dia</h3><div class="card-value" id="dash-atendimentos-dia">0</div></div>
+        </div>
+        <h3 class="section-title">🕒 Horário da agenda neste dispositivo</h3>
+        <p class="muted small">Esta configuração ainda é local. A sincronização central será tratada na próxima etapa.</p>
+        <form id="schedule-form">
+          <div class="form-row">
+            <div class="input-group"><label for="conf-abertura">Abertura</label><input type="time" id="conf-abertura" required></div>
+            <div class="input-group"><label for="conf-fechamento">Fechamento</label><input type="time" id="conf-fechamento" required></div>
+            <div class="input-group"><label for="conf-almoco">Almoço</label><input type="time" id="conf-almoco" required></div>
+          </div>
+          <button class="btn-primary" type="submit">Salvar neste dispositivo</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <div id="modal-agendamento" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-agendamento-title">
+    <div class="modal-content">
+      <div class="modal-header"><h2 id="modal-agendamento-title">📅 Agendar</h2><button class="close-button" id="close-booking-modal" type="button" aria-label="Fechar">×</button></div>
+      <p id="modal-horario" class="muted"></p>
+      <form id="booking-form">
+        <div class="input-group"><label for="modal-paciente-nome">Paciente</label><input type="text" list="lista-pacientes" id="modal-paciente-nome" maxlength="120" required><datalist id="lista-pacientes"></datalist></div>
+        <div class="input-group"><label for="modal-paciente-whatsapp">WhatsApp (para paciente novo)</label><input type="tel" id="modal-paciente-whatsapp" maxlength="24"></div>
+        <div class="input-group"><label for="modal-procedimento">Procedimento</label><select id="modal-procedimento" required><option value="">Selecione...</option></select></div>
+        <button class="btn-primary btn-block" id="booking-submit" type="submit">Confirmar</button>
+      </form>
+      <p id="booking-message" class="status-message" role="status" aria-live="polite"></p>
     </div>
-
-    <script>
-        let HORARIOS_AGENDA = [];
-        let confAbertura = localStorage.getItem('lumina_abertura') || '08:00';
-        let confFechamento = localStorage.getItem('lumina_fechamento') || '18:00';
-        let confAlmoco = localStorage.getItem('lumina_almoco') || '12:00';
-
-        function gerarArrayDeHorarios() {
-            HORARIOS_AGENDA = [];
-            let horaAtual = parseInt(confAbertura.split(':')[0]);
-            let horaFim = parseInt(confFechamento.split(':')[0]);
-            for(let i = horaAtual; i <= horaFim; i++) {
-                HORARIOS_AGENDA.push((i < 10 ? '0'+i : i) + ':00');
-            }
-        }
-        gerarArrayDeHorarios();
-
-        let pacientesGlobais = [];
-        let procedimentosGlobais = [];
-        let profissionaisGlobais = [];
-        let agendamentosDoDiaGlobais = [];
-        let anamnesesGlobais = [];
-        let horaSelecionadaParaAgendamento = '';
-        
-        let dataAtualObj = new Date();
-        let dataSelecionadaStr = obterDataFormatadaParaInput(dataAtualObj);
-
-        function obterDataFormatadaParaInput(dataObj) {
-            const offset = dataObj.getTimezoneOffset() * 60000;
-            return new Date(dataObj - offset).toISOString().split('T')[0];
-        }
-        function formatarDataVisor(dataStr) {
-            const partes = dataStr.split('-');
-            return `${partes[2]}/${partes[1]}/${partes[0]}`;
-        }
-        function formatarDataHoraBrasileira(isoString) {
-            const d = new Date(isoString);
-            return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-        }
-
-        async function carregarDadosGlobais() {
-            document.getElementById('data-agenda').value = dataSelecionadaStr;
-            document.getElementById('conf-abertura').value = confAbertura;
-            document.getElementById('conf-fechamento').value = confFechamento;
-            document.getElementById('conf-almoco').value = confAlmoco;
-            await atualizarListaPacientes();
-            await atualizarListaProcedimentos();
-            await carregarProfissionais();
-            await atualizarListaAnamneses();
-            await gerarGradeAgenda();
-        }
-
-        async function fazerLogin() {
-            const nick = document.getElementById('login-nick').value;
-            const senha = document.getElementById('login-senha').value;
-            const { data, error } = await supabaseClient.from('usuarios').select('*').eq('nick', nick).eq('senha', senha).single();
-            let perms = typeof data?.permissoes === 'string' ? JSON.parse(data.permissoes) : (data?.permissoes || []);
-            
-            if (data && !error && !perms.includes('inativo')) {
-                document.getElementById('login-screen').style.display = 'none';
-                document.body.style.display = 'block'; 
-                document.getElementById('app-screen').style.display = 'flex';
-                document.getElementById('login-error').style.display = 'none';
-                aplicarPermissoes(perms);
-                carregarDadosGlobais();
-            } else { document.getElementById('login-error').style.display = 'block'; }
-        }
-
-        function fazerLogout() { location.reload(); }
-
-        function aplicarPermissoes(perms) {
-            ['agenda', 'pacientes', 'procedimentos', 'documentos', 'profissionais', 'configuracoes'].forEach(menu => {
-                const btn = document.getElementById('menu-' + menu);
-                btn.style.display = perms.includes(menu) ? 'flex' : 'none';
-            });
-            changeView(perms[0] || 'agenda');
-        }
-
-        function changeView(viewId) {
-            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
-            document.querySelectorAll('.menu-item').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-            document.getElementById('menu-' + viewId).classList.add('active');
-            if(viewId === 'configuracoes') atualizarDashboard(); 
-        }
-
-        function mudarAbaDocumento(abaId, btnElement) {
-            document.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(abaId).classList.add('active');
-            btnElement.classList.add('active');
-        }
-
-        async function mudarData(dias) {
-            dataAtualObj.setDate(dataAtualObj.getDate() + dias);
-            dataSelecionadaStr = obterDataFormatadaParaInput(dataAtualObj);
-            document.getElementById('data-agenda').value = dataSelecionadaStr;
-            await gerarGradeAgenda();
-        }
-        async function selecionarDataPeloInput() {
-            const novaData = document.getElementById('data-agenda').value;
-            if(novaData) { dataSelecionadaStr = novaData; dataAtualObj = new Date(novaData + "T12:00:00"); await gerarGradeAgenda(); }
-        }
-
-        async function gerarGradeAgenda() {
-            const { data: agendamentos } = await supabaseClient.from('agendamentos').select('*').eq('data_agendamento', dataSelecionadaStr);
-            agendamentosDoDiaGlobais = agendamentos || [];
-            const container = document.getElementById('grade-agenda');
-            container.innerHTML = ''; 
-            
-            HORARIOS_AGENDA.forEach(hora => {
-                const row = document.createElement('div'); row.className = 'agenda-row';
-                const timeDiv = document.createElement('div'); timeDiv.className = 'agenda-time'; timeDiv.textContent = hora;
-                const slotDiv = document.createElement('div'); slotDiv.className = 'agenda-slot';
-                
-                const agendamento = agendamentosDoDiaGlobais.find(a => a.hora === hora);
-                const horaAlmocoSimplificada = confAlmoco.split(':')[0] + ':00';
-
-                if (hora === horaAlmocoSimplificada) {
-                    slotDiv.textContent = 'Almoço'; slotDiv.classList.add('slot-almoco');
-                } else if (agendamento) {
-                    if (agendamento.is_continuacao) {
-                        slotDiv.innerHTML = `<span>↳ Continuação: ${agendamento.paciente_nome}</span>`; slotDiv.classList.add('slot-continuacao');
-                    } else {
-                        slotDiv.innerHTML = `<span>👤 ${agendamento.paciente_nome} - <br><small>${agendamento.procedimento_nome}</small></span>`; slotDiv.classList.add('slot-ocupado');
-                        const btnCancelar = document.createElement('button'); btnCancelar.className = 'btn-cancelar'; btnCancelar.textContent = 'Desmarcar';
-                        btnCancelar.onclick = (e) => cancelarAgendamento(agendamento.id_agrupador, e);
-                        slotDiv.appendChild(btnCancelar);
-                    }
-                } else {
-                    slotDiv.textContent = 'Livre (Agendar)'; slotDiv.classList.add('slot-livre');
-                    slotDiv.onclick = () => abrirModalAgendamento(hora);
-                }
-                row.appendChild(timeDiv); row.appendChild(slotDiv); container.appendChild(row);
-            });
-            atualizarDashboard(); 
-        }
-
-        function abrirModalAgendamento(hora) {
-            horaSelecionadaParaAgendamento = hora;
-            document.getElementById('modal-horario').textContent = `${formatarDataVisor(dataSelecionadaStr)} - ${hora}`;
-            document.getElementById('modal-agendamento').style.display = 'flex';
-        }
-        function fecharModal() {
-            document.getElementById('modal-agendamento').style.display = 'none';
-            document.getElementById('modal-paciente-nome').value = '';
-            document.getElementById('modal-paciente-whatsapp').value = '';
-            document.getElementById('modal-procedimento').value = '';
-        }
-
-        async function confirmarAgendamento() {
-            const pacienteNome = document.getElementById('modal-paciente-nome').value.trim();
-            const pacienteWhats = document.getElementById('modal-paciente-whatsapp').value.trim();
-            const procedimentoNome = document.getElementById('modal-procedimento').value;
-
-            if(!pacienteNome || !procedimentoNome) return alert("Preencha o nome e selecione um procedimento.");
-
-            const pacienteExiste = pacientesGlobais.find(p => p.nome.toLowerCase() === pacienteNome.toLowerCase());
-            if(!pacienteExiste) { await salvarPaciente(pacienteNome, pacienteWhats); }
-
-            const procDetalhes = procedimentosGlobais.find(p => p.nome === procedimentoNome);
-            const duracao = procDetalhes ? procDetalhes.duracao : 60; 
-            const idAgrupador = Date.now(); 
-
-            let agendamentosParaInserir = [];
-            const blocosNecessarios = Math.ceil(duracao / 60); 
-            const indexAtual = HORARIOS_AGENDA.indexOf(horaSelecionadaParaAgendamento);
-
-            for(let i = 0; i < blocosNecessarios; i++) {
-                const horaAnalise = HORARIOS_AGENDA[indexAtual + i];
-                const horaAlmocoSimplificada = confAlmoco.split(':')[0] + ':00';
-
-                if (!horaAnalise || horaAnalise === horaAlmocoSimplificada) {
-                    return alert("O tempo do procedimento ultrapassa o almoço ou fim do expediente.");
-                }
-                const conflito = agendamentosDoDiaGlobais.find(a => a.hora === horaAnalise);
-                if (conflito && i > 0) return alert("Não há espaço contínuo na agenda.");
-
-                agendamentosParaInserir.push({ id_agrupador: idAgrupador, data_agendamento: dataSelecionadaStr, hora: horaAnalise, paciente_nome: pacienteNome, procedimento_nome: procedimentoNome, is_continuacao: i > 0 });
-            }
-
-            const { error } = await supabaseClient.from('agendamentos').insert(agendamentosParaInserir);
-            if(error) return alert("Erro ao agendar.");
-
-            fecharModal();
-            await gerarGradeAgenda(); 
-        }
-
-        async function cancelarAgendamento(idAgrupador, event) {
-            event.stopPropagation(); 
-            if(confirm(`Tem certeza que deseja desmarcar?`)) {
-                await supabaseClient.from('agendamentos').delete().eq('id_agrupador', idAgrupador);
-                await gerarGradeAgenda();
-            }
-        }
-
-        async function salvarPaciente(nomeDireto = null, whatsDireto = null) {
-            const nome = nomeDireto || document.getElementById('pac-nome').value.trim();
-            const whatsapp = whatsDireto || document.getElementById('pac-whatsapp').value.trim();
-            if(!nome) return alert("Nome obrigatório!");
-
-            await supabaseClient.from('pacientes').insert([{ nome, whatsapp }]);
-            if(!nomeDireto) {
-                document.getElementById('pac-nome').value = '';
-                document.getElementById('pac-whatsapp').value = '';
-                alert("Paciente cadastrado!");
-            }
-            await atualizarListaPacientes();
-        }
-
-        async function atualizarListaPacientes() {
-            const { data } = await supabaseClient.from('pacientes').select('*').order('nome');
-            pacientesGlobais = data || [];
-            
-            const tbody = document.getElementById('tabela-pacientes');
-            const datalist = document.getElementById('lista-pacientes');
-            const selectAnamnese = document.getElementById('anamnese-paciente'); 
-
-            tbody.innerHTML = ''; datalist.innerHTML = ''; selectAnamnese.innerHTML = '<option value="">Selecione um paciente...</option>';
-            
-            if (pacientesGlobais.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#666;">Nenhum paciente.</td></tr>`;
-            } else {
-                pacientesGlobais.forEach(p => {
-                    tbody.innerHTML += `<tr><td>${p.nome}</td><td>${p.whatsapp || '-'}</td></tr>`;
-                    datalist.innerHTML += `<option value="${p.nome}">`;
-                    selectAnamnese.innerHTML += `<option value="${p.nome}">${p.nome}</option>`;
-                });
-            }
-        }
-
-        async function salvarProcedimento() {
-            const idEdit = document.getElementById('proc-id-edit').value;
-            const nome = document.getElementById('proc-nome').value.trim();
-            const categoria = document.getElementById('proc-categoria').value;
-            const status = document.getElementById('proc-status').value;
-            const duracao = parseInt(document.getElementById('proc-duracao').value);
-            const valor = parseFloat(document.getElementById('proc-valor').value) || 0;
-            const especialidade = document.getElementById('proc-especialidade').value.trim();
-            const descricao = document.getElementById('proc-descricao').value.trim();
-            const beneficios = document.getElementById('proc-beneficios').value.trim();
-            const cuidados_pos = document.getElementById('proc-cuidados').value.trim();
-            const retorno = document.getElementById('proc-retorno').value.trim();
-            const observacao_preco = document.getElementById('proc-obs-preco').value.trim();
-
-            if(!nome) return alert("Nome obrigatório!");
-
-            const payload = { nome, categoria, status, duracao, valor, especialidade, descricao, beneficios, cuidados_pos, retorno, observacao_preco };
-
-            if(idEdit) {
-                await supabaseClient.from('procedimentos').update(payload).eq('id', idEdit);
-                alert("Atualizado!");
-            } else {
-                await supabaseClient.from('procedimentos').insert([payload]);
-                alert("Salvo!");
-            }
-            cancelarEdicaoProcedimento();
-            await atualizarListaProcedimentos();
-        }
-
-        function prepararEdicaoProcedimento(id) {
-            const proc = procedimentosGlobais.find(p => p.id === id);
-            if(!proc) return;
-            document.getElementById('proc-id-edit').value = proc.id;
-            document.getElementById('proc-nome').value = proc.nome;
-            document.getElementById('proc-categoria').value = proc.categoria || 'Outros';
-            document.getElementById('proc-status').value = proc.status || 'Ativo';
-            document.getElementById('proc-duracao').value = proc.duracao || 60;
-            document.getElementById('proc-valor').value = proc.valor || 0;
-            document.getElementById('proc-especialidade').value = proc.especialidade || '';
-            document.getElementById('proc-descricao').value = proc.descricao || '';
-            document.getElementById('proc-beneficios').value = proc.beneficios || '';
-            document.getElementById('proc-cuidados').value = proc.cuidados_pos || '';
-            document.getElementById('proc-retorno').value = proc.retorno || '';
-            document.getElementById('proc-obs-preco').value = proc.observacao_preco || '';
-            document.getElementById('btn-salvar-proc').textContent = "Atualizar Procedimento";
-            document.getElementById('btn-cancelar-edit-proc').style.display = "inline-block";
-            document.getElementById('main-content').scrollTo(0, 0);
-        }
-
-        function cancelarEdicaoProcedimento() {
-            document.getElementById('proc-id-edit').value = '';
-            document.querySelectorAll('#procedimentos input[type="text"], #procedimentos input[type="number"], #procedimentos textarea').forEach(el => el.value = '');
-            document.getElementById('proc-categoria').value = 'Avaliações';
-            document.getElementById('proc-status').value = 'Ativo';
-            document.getElementById('proc-duracao').value = '60';
-            document.getElementById('btn-salvar-proc').textContent = "Salvar Procedimento";
-            document.getElementById('btn-cancelar-edit-proc').style.display = "none";
-        }
-
-        async function alterarStatusProcedimento(id, restaurar) {
-            const novoStatus = restaurar ? 'Ativo' : 'Inativo';
-            if(!restaurar && !confirm("Mover para a lixeira?")) return;
-            await supabaseClient.from('procedimentos').update({ status: novoStatus }).eq('id', id);
-            await atualizarListaProcedimentos();
-        }
-
-        async function atualizarListaProcedimentos() {
-            const { data } = await supabaseClient.from('procedimentos').select('*').order('categoria');
-            procedimentosGlobais = data || [];
-            
-            const tbodyAtivos = document.getElementById('tabela-procedimentos-ativos');
-            const tbodyInativos = document.getElementById('tabela-procedimentos-inativos');
-            const selectProcedimento = document.getElementById('modal-procedimento');
-            const selectAnamneseProc = document.getElementById('anamnese-procedimento'); 
-            
-            tbodyAtivos.innerHTML = ''; tbodyInativos.innerHTML = '';
-            selectProcedimento.innerHTML = '<option value="">Selecione...</option>';
-            selectAnamneseProc.innerHTML = '<option value="">Selecione um procedimento...</option>';
-            
-            if (procedimentosGlobais.length === 0) {
-                tbodyAtivos.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#666;">Nenhum.</td></tr>`;
-            } else {
-                procedimentosGlobais.forEach(proc => {
-                    const rowHtml = `<tr>
-                        <td>${proc.categoria || '-'}</td>
-                        <td><strong>${proc.nome}</strong></td>
-                        <td>${proc.duracao} Min</td>
-                        <td>R$ ${proc.valor.toFixed(2)}</td>
-                        <td>__BOTOES__</td>
-                    </tr>`;
-
-                    if (proc.status === 'Inativo') {
-                        let botoes = `<button class="btn-acao" onclick="alterarStatusProcedimento('${proc.id}', true)">♻️ Restaurar</button>`;
-                        tbodyInativos.innerHTML += rowHtml.replace('__BOTOES__', botoes);
-                    } else {
-                        let botoes = `<button class="btn-acao" onclick="prepararEdicaoProcedimento('${proc.id}')">✏️ Editar</button>
-                                      <button class="btn-acao danger" onclick="alterarStatusProcedimento('${proc.id}', false)">🗑️ Lixeira</button>`;
-                        tbodyAtivos.innerHTML += rowHtml.replace('__BOTOES__', botoes);
-                        
-                        selectProcedimento.innerHTML += `<option value="${proc.nome}">${proc.nome}</option>`;
-                        selectAnamneseProc.innerHTML += `<option value="${proc.nome}">${proc.nome}</option>`;
-                    }
-                });
-            }
-        }
-
-        async function carregarProfissionais() {
-            const { data } = await supabaseClient.from('usuarios').select('*').neq('nick', 'admin').order('nome');
-            profissionaisGlobais = data || [];
-            const tbodyAtivos = document.getElementById('tabela-profissionais-ativos');
-            const tbodyInativos = document.getElementById('tabela-profissionais-inativos');
-            tbodyAtivos.innerHTML = ''; tbodyInativos.innerHTML = '';
-
-            profissionaisGlobais.forEach(prof => {
-                let perms = typeof prof.permissoes === 'string' ? JSON.parse(prof.permissoes) : prof.permissoes;
-                if(perms.includes('inativo')) {
-                    let botoes = `<button class="btn-acao" onclick="alterarStatusProfissional('${prof.id}', true)">♻️ Restaurar</button>`;
-                    tbodyInativos.innerHTML += `<tr><td>${prof.nome}</td><td>${prof.especialidade}</td><td>${prof.nick}</td><td>${botoes}</td></tr>`;
-                } else {
-                    let botoes = `<button class="btn-acao" onclick="prepararEdicaoProfissional('${prof.id}')">✏️ Editar</button>
-                                  <button class="btn-acao danger" onclick="alterarStatusProfissional('${prof.id}', false)">🗑️ Lixeira</button>`;
-                    tbodyAtivos.innerHTML += `<tr><td>${prof.nome}</td><td>${prof.especialidade}</td><td>${prof.nick}</td><td>${botoes}</td></tr>`;
-                }
-            });
-        }
-
-        async function salvarProfissional() {
-            const idEdit = document.getElementById('cad-id-edit').value;
-            const nome = document.getElementById('cad-nome').value.trim();
-            const nick = document.getElementById('cad-nick').value.trim();
-            const especialidade = document.getElementById('cad-especialidade').value.trim();
-            const senha = document.getElementById('cad-senha').value.trim();
-            if(senha.length !== 8) return alert("A senha deve ter 8 dígitos.");
-
-            let permissoes = [];
-            ['agenda', 'pacientes', 'procedimentos', 'documentos', 'profissionais', 'configuracoes'].forEach(p => {
-                if(document.getElementById(`perm-${p}`).checked) permissoes.push(p);
-            });
-
-            if(idEdit) {
-                await supabaseClient.from('usuarios').update({ nome, nick, especialidade, senha, permissoes }).eq('id', idEdit);
-                alert("Atualizado!");
-            } else {
-                const { error } = await supabaseClient.from('usuarios').insert([{ nome, nick, especialidade, senha, permissoes }]);
-                if(error) return alert("Erro. Nickname pode já existir.");
-                alert("Cadastrado!");
-            }
-            cancelarEdicaoProfissional();
-            await carregarProfissionais();
-        }
-
-        function prepararEdicaoProfissional(id) {
-            const prof = profissionaisGlobais.find(p => p.id === id);
-            if(!prof) return;
-            document.getElementById('cad-id-edit').value = prof.id;
-            document.getElementById('cad-nome').value = prof.nome;
-            document.getElementById('cad-especialidade').value = prof.especialidade;
-            document.getElementById('cad-nick').value = prof.nick;
-            document.getElementById('cad-senha').value = prof.senha;
-            
-            let perms = typeof prof.permissoes === 'string' ? JSON.parse(prof.permissoes) : prof.permissoes;
-            ['agenda', 'pacientes', 'procedimentos', 'documentos', 'profissionais', 'configuracoes'].forEach(p => {
-                document.getElementById(`perm-${p}`).checked = perms.includes(p);
-            });
-            document.getElementById('btn-salvar-prof').textContent = "Atualizar Profissional";
-            document.getElementById('btn-cancelar-edit').style.display = "inline-block";
-            document.getElementById('main-content').scrollTo(0, 0);
-        }
-
-        function cancelarEdicaoProfissional() {
-            document.getElementById('cad-id-edit').value = '';
-            document.getElementById('cad-nome').value = ''; document.getElementById('cad-nick').value = '';
-            document.getElementById('cad-especialidade').value = ''; document.getElementById('cad-senha').value = '';
-            document.getElementById('btn-salvar-prof').textContent = "Salvar Profissional";
-            document.getElementById('btn-cancelar-edit').style.display = "none";
-        }
-
-        async function alterarStatusProfissional(id, restaurar) {
-            const prof = profissionaisGlobais.find(p => p.id === id);
-            let perms = typeof prof.permissoes === 'string' ? JSON.parse(prof.permissoes) : prof.permissoes;
-            
-            if(restaurar) { perms = perms.filter(p => p !== 'inativo'); } 
-            else { if(confirm("Mover para a lixeira?")) { perms.push('inativo'); } else return; }
-
-            await supabaseClient.from('usuarios').update({ permissoes: perms }).eq('id', id);
-            await carregarProfissionais();
-        }
-
-        function salvarConfiguracoesHorario() {
-            const novaAbertura = document.getElementById('conf-abertura').value;
-            const novoFechamento = document.getElementById('conf-fechamento').value;
-            const novoAlmoco = document.getElementById('conf-almoco').value;
-            if(!novaAbertura || !novoFechamento || !novoAlmoco) return alert("Preencha todos.");
-
-            localStorage.setItem('lumina_abertura', novaAbertura);
-            localStorage.setItem('lumina_fechamento', novoFechamento);
-            localStorage.setItem('lumina_almoco', novoAlmoco);
-            confAbertura = novaAbertura; confFechamento = novoFechamento; confAlmoco = novoAlmoco;
-
-            gerarArrayDeHorarios();
-            gerarGradeAgenda(); 
-            alert("Sincronizados!");
-        }
-
-        function atualizarDashboard() {
-            let faturamento = 0; let atendimentos = 0;
-            const agendamentosPrincipais = agendamentosDoDiaGlobais.filter(a => !a.is_continuacao);
-            agendamentosPrincipais.forEach(ag => {
-                const proc = procedimentosGlobais.find(p => p.nome === ag.procedimento_nome);
-                if(proc) { faturamento += proc.valor; atendimentos++; }
-            });
-            document.getElementById('dash-faturamento-dia').textContent = `R$ ${faturamento.toFixed(2)}`;
-            document.getElementById('dash-atendimentos-dia').textContent = atendimentos;
-            document.getElementById('dash-data-ref').textContent = `Ref: ${formatarDataVisor(dataSelecionadaStr)}`;
-        }
-
-        const BANCO_PERGUNTAS = {
-            'injetaveis': [
-                "Possui alergia a anestésicos, medicamentos ou substâncias sintéticas?",
-                "Tem alguma doença autoimune (ex: Lúpus, Vitiligo)?",
-                "Está fazendo uso de antibióticos, anti-inflamatórios ou anticoagulantes?",
-                "Tem histórico de herpes (labial/facial)?",
-                "Está gestante ou amamentando?"
-            ],
-            'facial': [
-                "Faz uso de ácidos ou produtos clareadores em casa?",
-                "Fez uso de Roacutan nos últimos 6 meses?",
-                "Tem histórico de alergia a cosméticos?",
-                "Costuma ter muita exposição ao sol sem proteção?",
-                "Possui histórico de câncer de pele na família ou pessoal?"
-            ],
-            'corporal': [
-                "Possui prótese metálica, DIU de cobre ou marca-passo?",
-                "Tem histórico de trombose ou problemas circulatórios?",
-                "Possui pressão alta ou diabetes descompensada?",
-                "Pratica atividade física regularmente?"
-            ],
-            'endolaser': [
-                "Possui problemas de cicatrização (queloides ou hipertrófica)?",
-                "Fez alguma cirurgia recente na região a ser tratada?",
-                "Tem diabetes ou hipertensão descompensada?",
-                "Está utilizando algum medicamento de uso contínuo?"
-            ],
-            'massagem': [
-                "Possui fraturas recentes, osteoporose ou problemas na coluna?",
-                "Tem histórico de trombose venosa profunda?",
-                "Possui algum processo inflamatório ou infeccioso agudo?",
-                "Está gestante (se sim, especificar semanas)?"
-            ],
-            'laser': [
-                "Tomou sol na região nos últimos 15 dias?",
-                "Faz uso de ácidos na região que será depilada?",
-                "Possui tatuagem no local da aplicação?",
-                "Tem histórico de foliculite severa?"
-            ],
-            'nutricao': [
-                "Possui alergia ou intolerância alimentar diagnosticada?",
-                "Tem problemas intestinais (constipação, diarreia, dores)?",
-                "Possui diagnóstico de diabetes, colesterol alto ou hipertensão?",
-                "Faz uso de suplementação ou vitaminas?"
-            ],
-            'geral': [
-                "Possui alguma alergia diagnosticada?",
-                "Está gestante ou amamentando?",
-                "Faz uso contínuo de algum medicamento?",
-                "Já teve complicações em procedimentos estéticos anteriores?"
-            ]
-        };
-
-        function identificarCategoriaProcedimento(nomeProc) {
-            nomeProc = nomeProc.toLowerCase();
-            if (nomeProc.includes('botox') || nomeProc.includes('preenchimento') || nomeProc.includes('harmonização') || nomeProc.includes('bioestimulador') || nomeProc.includes('peim')) return 'injetaveis';
-            if (nomeProc.includes('endolaser')) return 'endolaser';
-            if (nomeProc.includes('laser') || nomeProc.includes('cera') || nomeProc.includes('depilação')) return 'laser';
-            if (nomeProc.includes('massagem') || nomeProc.includes('drenagem')) return 'massagem';
-            if (nomeProc.includes('nutricionista')) return 'nutricao';
-            if (nomeProc.includes('limpeza') || nomeProc.includes('peeling') || nomeProc.includes('microagulhamento') || nomeProc.includes('skinbooster') || nomeProc.includes('melasma') || nomeProc.includes('rosácea') || nomeProc.includes('hydragloss')) return 'facial';
-            if (nomeProc.includes('emagrecimento') || nomeProc.includes('bronze') || nomeProc.includes('velaryan')) return 'corporal';
-            return 'geral'; 
-        }
-
-        function gerarFormularioAnamnese() {
-            const selectProc = document.getElementById('anamnese-procedimento').value;
-            const container = document.getElementById('anamnese-dinamica-container');
-            const btnSalvar = document.getElementById('btn-salvar-anamnese');
-
-            if(!selectProc) {
-                container.innerHTML = '<p style="color: #666; font-style: italic;">Selecione um procedimento acima.</p>';
-                btnSalvar.style.display = 'none';
-                return;
-            }
-
-            const categoria = identificarCategoriaProcedimento(selectProc);
-            const perguntas = BANCO_PERGUNTAS[categoria];
-
-            container.innerHTML = `<h4 style="margin-bottom:15px; color:#4CAF50;">Perguntas Direcionadas: ${selectProc}</h4>`;
-
-            perguntas.forEach((pergunta, index) => {
-                container.innerHTML += `
-                    <div class="anamnese-bloco">
-                        <div class="anamnese-pergunta">${index + 1}. ${pergunta}</div>
-                        <div class="anamnese-opcoes">
-                            <label><input type="radio" name="pergunta_${index}" value="Sim"> Sim</label>
-                            <label><input type="radio" name="pergunta_${index}" value="Não"> Não</label>
-                        </div>
-                        <input type="text" class="anamnese-detalhe" id="detalhe_${index}" placeholder="Detalhes (opcional)...">
-                    </div>
-                `;
-            });
-
-            btnSalvar.style.display = 'block';
-        }
-
-        async function salvarAnamnese() {
-            const paciente = document.getElementById('anamnese-paciente').value;
-            const procedimento = document.getElementById('anamnese-procedimento').value;
-
-            if(!paciente || !procedimento) return alert("Selecione Paciente e Procedimento.");
-
-            const categoria = identificarCategoriaProcedimento(procedimento);
-            const perguntas = BANCO_PERGUNTAS[categoria];
-            let respostasFinais = [];
-
-            perguntas.forEach((pergunta, index) => {
-                const radioSelecionado = document.querySelector(`input[name="pergunta_${index}"]:checked`);
-                const respostaOpcao = radioSelecionado ? radioSelecionado.value : 'Não respondido';
-                const detalhe = document.getElementById(`detalhe_${index}`).value.trim();
-
-                respostasFinais.push({
-                    pergunta: pergunta,
-                    resposta: respostaOpcao,
-                    detalhe: detalhe || 'Sem detalhes.'
-                });
-            });
-
-            const { error } = await supabaseClient.from('anamneses').insert([{ 
-                paciente_nome: paciente, 
-                procedimento_nome: procedimento, 
-                respostas: JSON.stringify(respostasFinais) 
-            }]);
-
-            if(error) return alert("Erro ao salvar.");
-            
-            alert("Salva com sucesso!");
-            document.getElementById('anamnese-paciente').value = '';
-            document.getElementById('anamnese-procedimento').value = '';
-            gerarFormularioAnamnese(); 
-            await atualizarListaAnamneses();
-        }
-
-        async function atualizarListaAnamneses() {
-            const { data } = await supabaseClient.from('anamneses').select('*').order('data_criacao', { ascending: false });
-            anamnesesGlobais = data || [];
-            
-            const tbody = document.getElementById('tabela-anamneses');
-            tbody.innerHTML = '';
-            
-            if (anamnesesGlobais.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#666;">Nenhuma registrada.</td></tr>`;
-            } else {
-                anamnesesGlobais.forEach(anamnese => {
-                    const dataFormatada = formatarDataHoraBrasileira(anamnese.data_criacao);
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${dataFormatada}</td>
-                            <td><strong>${anamnese.paciente_nome}</strong></td>
-                            <td>${anamnese.procedimento_nome}</td>
-                            <td><button class="btn-acao" onclick="visualizarAnamnese('${anamnese.id}')">👁️ Visualizar</button></td>
-                        </tr>
-                    `;
-                });
-            }
-        }
-
-        function visualizarAnamnese(id) {
-            const anamnese = anamnesesGlobais.find(a => a.id === id);
-            if(!anamnese) return;
-
-            document.getElementById('view-anamnese-info').innerHTML = `
-                Paciente: <span style="color:var(--text-color);">${anamnese.paciente_nome}</span><br>
-                Procedimento: <span style="color:var(--text-color);">${anamnese.procedimento_nome}</span><br>
-                Data: <span style="color:var(--text-color);">${formatarDataHoraBrasileira(anamnese.data_criacao)}</span>
-            `;
-
-            const respostas = typeof anamnese.respostas === 'string' ? JSON.parse(anamnese.respostas) : anamnese.respostas;
-            const containerRespostas = document.getElementById('view-anamnese-respostas');
-            containerRespostas.innerHTML = '';
-
-            respostas.forEach((item, index) => {
-                let corResposta = item.resposta === 'Sim' ? '#d32f2f' : (item.resposta === 'Não' ? '#4CAF50' : '#666'); 
-                containerRespostas.innerHTML += `
-                    <div style="margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
-                        <p style="font-weight: bold; margin-bottom: 5px;">${index + 1}. ${item.pergunta}</p>
-                        <p>Resposta: <strong style="color: ${corResposta};">${item.resposta}</strong></p>
-                        <p style="color: #555; font-size: 0.85rem; margin-top: 3px;">Obs: ${item.detalhe}</p>
-                    </div>
-                `;
-            });
-            document.getElementById('modal-view-anamnese').style.display = 'flex';
-        }
-    </script>
+  </div>
+
+  <div id="modal-view-anamnese" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="view-anamnese-title">
+    <div class="modal-content">
+      <div class="modal-header"><h2 id="view-anamnese-title">📄 Resumo da Anamnese</h2><button class="close-button" id="close-anamnese-modal" type="button" aria-label="Fechar">×</button></div>
+      <div id="view-anamnese-info"></div>
+      <div id="view-anamnese-respostas"></div>
+    </div>
+  </div>
 </body>
 </html>

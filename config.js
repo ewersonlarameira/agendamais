@@ -1,5 +1,17 @@
-const SUPABASE_URL = 'https://xwtkfdfhmaaraodrusxx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3dGtmZGZobWFhcmFvZHJ1c3h4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5NDgyNjIsImV4cCI6MjEwNTUyNDI2Mn0.2rpZVApvoN14cqL2Ny5KeFI2aXEtQI99MkVgYIQsfUw';
+'use strict';
 
-// Mudamos o nome para supabaseClient para evitar conflitos
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_URL = 'https://xwtkfdfhmaaraodrusxx.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Skl9u5WqpCxPSI2ad8fwhA_dkocWjiq';
+
+window.supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce'
+    }
+  }
+);
