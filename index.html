@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina's Clínica Estética</title>
-    <!-- Importação do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Importação das suas Chaves de Configuração -->
     <script src="config.js"></script>
     
     <style>
@@ -41,6 +39,14 @@
         .checkbox-group { margin-top: 15px; border: 1px solid var(--border-color); padding: 15px; border-radius: 4px; }
         .checkbox-group h4 { margin-bottom: 10px; }
         .checkbox-list label { display: block; margin-bottom: 8px; cursor: pointer; }
+
+        /* Controles da Agenda */
+        .agenda-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        .agenda-header h2 { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .date-controls { display: flex; gap: 10px; align-items: center; }
+        .date-controls button { background: var(--bg-color); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+        .date-controls button:hover { background: var(--hover-bg); }
+        .date-controls input[type="date"] { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; }
 
         .agenda-grid { border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden; }
         .agenda-row { display: flex; border-bottom: 1px solid var(--border-color); }
@@ -88,7 +94,14 @@
 
         <main>
             <div id="agenda" class="view active">
-                <h2>📅 Agenda do Dia</h2>
+                <div class="agenda-header">
+                    <h2>📅 Agenda</h2>
+                    <div class="date-controls">
+                        <button onclick="mudarData(-1)">◀ Anterior</button>
+                        <input type="date" id="data-agenda" onchange="selecionarDataPeloInput()">
+                        <button onclick="mudarData(1)">Próximo ▶</button>
+                    </div>
+                </div>
                 <div class="agenda-grid" id="grade-agenda"></div>
             </div>
 
@@ -143,7 +156,7 @@
 
             <div id="configuracoes" class="view">
                 <h2>⚙️ Configurações</h2>
-                <p>O aplicativo agora está rodando em tempo real com o banco de dados Supabase e as chaves estão isoladas no config.js.</p>
+                <p>O aplicativo agora está rodando em tempo real com o banco de dados Supabase e navegação de dias ativa!</p>
             </div>
         </main>
     </div>
@@ -167,17 +180,51 @@
         </div>
     </div>
 
+    <!-- LÓGICA PRINCIPAL -->
     <script>
-        let horaSelecionadaParaAgendamento = '';
         const HORARIOS_AGENDA = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
         let pacientesGlobais = [];
         let procedimentosGlobais = [];
+        let horaSelecionadaParaAgendamento = '';
+        
+        // Controle de Datas
+        let dataAtualObj = new Date();
+        let dataSelecionadaStr = obterDataFormatadaParaInput(dataAtualObj); // YYYY-MM-DD
+
+        function obterDataFormatadaParaInput(dataObj) {
+            const offset = dataObj.getTimezoneOffset() * 60000;
+            return new Date(dataObj - offset).toISOString().split('T')[0];
+        }
+
+        function formatarDataVisor(dataStr) {
+            const partes = dataStr.split('-');
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
 
         // --- INICIALIZAÇÃO DE DADOS ---
         async function carregarDadosGlobais() {
+            document.getElementById('data-agenda').value = dataSelecionadaStr;
             await atualizarListaPacientes();
             await atualizarListaProcedimentos();
             await gerarGradeAgenda();
+        }
+
+        // --- LÓGICA DE DATAS DA AGENDA ---
+        async function mudarData(dias) {
+            dataAtualObj.setDate(dataAtualObj.getDate() + dias);
+            dataSelecionadaStr = obterDataFormatadaParaInput(dataAtualObj);
+            document.getElementById('data-agenda').value = dataSelecionadaStr;
+            await gerarGradeAgenda();
+        }
+
+        async function selecionarDataPeloInput() {
+            const novaData = document.getElementById('data-agenda').value;
+            if(novaData) {
+                dataSelecionadaStr = novaData;
+                // Atualiza o objeto Date para manter a sincronia dos botões de voltar/avançar
+                dataAtualObj = new Date(novaData + "T12:00:00"); 
+                await gerarGradeAgenda();
+            }
         }
 
         // --- LÓGICA DE LOGIN ---
@@ -185,13 +232,7 @@
             const nick = document.getElementById('login-nick').value;
             const senha = document.getElementById('login-senha').value;
             
-            // Usando supabaseClient (que vem do config.js)
-            const { data, error } = await supabaseClient
-                .from('usuarios')
-                .select('*')
-                .eq('nick', nick)
-                .eq('senha', senha)
-                .single();
+            const { data, error } = await supabaseClient.from('usuarios').select('*').eq('nick', nick).eq('senha', senha).single();
 
             if (data && !error) {
                 document.getElementById('login-screen').style.display = 'none';
@@ -326,9 +367,14 @@
             document.getElementById('cad-senha').value = '';
         }
 
-        // --- LÓGICA DA AGENDA (REAL TIME SUPABASE) ---
+        // --- LÓGICA DA AGENDA (FILTRADA POR DATA) ---
         async function gerarGradeAgenda() {
-            const { data: agendamentos, error } = await supabaseClient.from('agendamentos').select('*');
+            // Busca no Supabase os agendamentos correspondentes à data selecionada no input
+            const { data: agendamentos, error } = await supabaseClient
+                .from('agendamentos')
+                .select('*')
+                .eq('data_agendamento', dataSelecionadaStr);
+
             if (error) return console.error(error);
 
             const container = document.getElementById('grade-agenda');
@@ -376,7 +422,7 @@
 
         function abrirModalAgendamento(hora) {
             horaSelecionadaParaAgendamento = hora;
-            document.getElementById('modal-horario').textContent = `Horário Selecionado: ${hora}`;
+            document.getElementById('modal-horario').textContent = `Dia ${formatarDataVisor(dataSelecionadaStr)} - Horário: ${hora}`;
             document.getElementById('modal-agendamento').style.display = 'flex';
         }
 
@@ -406,13 +452,18 @@
                     return alert("Sem tempo antes do almoço/fim do expediente para 2 horas.");
                 }
 
-                const { data: conflito } = await supabaseClient.from('agendamentos').select('*').eq('hora', proximaHora);
+                const { data: conflito } = await supabaseClient
+                    .from('agendamentos')
+                    .select('*')
+                    .eq('data_agendamento', dataSelecionadaStr)
+                    .eq('hora', proximaHora);
+                
                 if (conflito.length > 0) return alert("O próximo horário já está ocupado.");
 
-                agendamentosParaInserir.push({ id_agrupador: idAgrupador, hora: proximaHora, paciente_nome: paciente, procedimento_nome: procedimentoNome, is_continuacao: true });
+                agendamentosParaInserir.push({ id_agrupador: idAgrupador, data_agendamento: dataSelecionadaStr, hora: proximaHora, paciente_nome: paciente, procedimento_nome: procedimentoNome, is_continuacao: true });
             }
 
-            agendamentosParaInserir.push({ id_agrupador: idAgrupador, hora: horaSelecionadaParaAgendamento, paciente_nome: paciente, procedimento_nome: procedimentoNome, is_continuacao: false });
+            agendamentosParaInserir.push({ id_agrupador: idAgrupador, data_agendamento: dataSelecionadaStr, hora: horaSelecionadaParaAgendamento, paciente_nome: paciente, procedimento_nome: procedimentoNome, is_continuacao: false });
 
             const { error } = await supabaseClient.from('agendamentos').insert(agendamentosParaInserir);
             if(error) return alert("Erro ao agendar.");
