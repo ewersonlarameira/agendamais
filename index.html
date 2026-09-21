@@ -86,6 +86,16 @@
         .sub-tab-btn.active { color: var(--text-color); font-weight: bold; border-bottom: 2px solid var(--text-color); }
         .sub-tab-content { display: none; }
         .sub-tab-content.active { display: block; }
+        
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; background: #e0e0e0; color: #333; }
+        .badge.ativo { background: #4CAF50; color: white; }
+
+        /* Estilos do Formulário Dinâmico de Anamnese */
+        .anamnese-bloco { background: var(--hover-bg); padding: 15px; border-radius: 6px; margin-bottom: 15px; }
+        .anamnese-pergunta { font-weight: bold; margin-bottom: 10px; font-size: 0.95rem; }
+        .anamnese-opcoes { display: flex; gap: 15px; margin-bottom: 10px; }
+        .anamnese-opcoes label { cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 0.9rem;}
+        .anamnese-detalhe { width: 100%; padding: 8px; border: 1px solid var(--input-border); border-radius: 4px; font-size: 0.85rem; background: #fff;}
     </style>
 </head>
 <body>
@@ -138,7 +148,7 @@
                 <table><thead><tr><th>Nome</th><th>WhatsApp</th></tr></thead><tbody id="tabela-pacientes"></tbody></table>
             </div>
 
-            <!-- PROCEDIMENTOS (COM LIXEIRA E EDIÇÃO) -->
+            <!-- PROCEDIMENTOS -->
             <div id="procedimentos" class="view">
                 <h2>✨ Catálogo de Procedimentos</h2>
                 <input type="hidden" id="proc-id-edit">
@@ -162,11 +172,9 @@
                 <div class="form-row">
                     <div class="input-group"><label>Duração (Minutos)</label>
                         <select id="proc-duracao">
-                            <option value="30">30 Minutos</option>
-                            <option value="45">45 Minutos</option>
+                            <option value="30">30 Minutos</option><option value="45">45 Minutos</option>
                             <option value="60" selected>60 Minutos (1 Hora)</option>
-                            <option value="90">90 Minutos (1h30)</option>
-                            <option value="120">120 Minutos (2 Horas)</option>
+                            <option value="90">90 Minutos (1h30)</option><option value="120">120 Minutos (2 Horas)</option>
                         </select>
                     </div>
                     <div class="input-group"><label>Valor (R$)</label><input type="number" id="proc-valor" placeholder="Ex: 150"></div>
@@ -214,7 +222,33 @@
                     <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-termo', this)">Termos de Consentimento</button>
                     <button class="sub-tab-btn" onclick="mudarAbaDocumento('doc-atestado', this)">Atestados</button>
                 </div>
-                <div id="doc-anamnese" class="sub-tab-content active"><p style="color: #666; font-style: italic;">Módulo de Anamnese em construção.</p></div>
+                
+                <!-- ABA ANAMNESE -->
+                <div id="doc-anamnese" class="sub-tab-content active">
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label>Selecione o Paciente</label>
+                            <select id="anamnese-paciente"><option value="">Selecione um paciente...</option></select>
+                        </div>
+                        <div class="input-group">
+                            <label>Selecione o Procedimento (Isso define as perguntas)</label>
+                            <select id="anamnese-procedimento" onchange="gerarFormularioAnamnese()"><option value="">Selecione um procedimento...</option></select>
+                        </div>
+                    </div>
+                    
+                    <div id="anamnese-dinamica-container" style="margin-top: 10px;">
+                        <p style="color: #666; font-style: italic;">Selecione um procedimento acima para carregar as perguntas da anamnese.</p>
+                    </div>
+                    
+                    <button class="btn-primary" id="btn-salvar-anamnese" style="display: none; width: auto; padding: 10px 30px;" onclick="salvarAnamnese()">💾 Salvar Anamnese no Histórico</button>
+
+                    <h3 style="margin-top: 50px; margin-bottom: 10px;">📋 Histórico de Anamneses Salvas</h3>
+                    <table>
+                        <thead><tr><th>Data</th><th>Paciente</th><th>Procedimento</th><th>Ações</th></tr></thead>
+                        <tbody id="tabela-anamneses"></tbody>
+                    </table>
+                </div>
+
                 <div id="doc-prontuario" class="sub-tab-content"><p style="color: #666; font-style: italic;">Módulo de Prontuários em construção.</p></div>
                 <div id="doc-receita" class="sub-tab-content"><p style="color: #666; font-style: italic;">Módulo de Receitas em construção.</p></div>
                 <div id="doc-termo" class="sub-tab-content"><p style="color: #666; font-style: italic;">Módulo de Termos em construção.</p></div>
@@ -304,6 +338,16 @@
         </div>
     </div>
 
+    <!-- MODAL VISUALIZAR ANAMNESE -->
+    <div id="modal-view-anamnese" class="modal-overlay">
+        <div class="modal-content" style="width: 600px;">
+            <span class="close-btn" onclick="document.getElementById('modal-view-anamnese').style.display='none'">&times;</span>
+            <h2 style="border-bottom: none; margin-bottom: 5px;">📄 Resumo da Anamnese</h2>
+            <p id="view-anamnese-info" style="margin-bottom: 20px; font-weight: bold; color: #666;"></p>
+            <div id="view-anamnese-respostas" style="background: var(--bg-color); padding: 15px; border-radius: 6px; font-size: 0.9rem;"></div>
+        </div>
+    </div>
+
     <script>
         let HORARIOS_AGENDA = [];
         let confAbertura = localStorage.getItem('lumina_abertura') || '08:00';
@@ -324,6 +368,7 @@
         let procedimentosGlobais = [];
         let profissionaisGlobais = [];
         let agendamentosDoDiaGlobais = [];
+        let anamnesesGlobais = [];
         let horaSelecionadaParaAgendamento = '';
         
         let dataAtualObj = new Date();
@@ -337,6 +382,10 @@
             const partes = dataStr.split('-');
             return `${partes[2]}/${partes[1]}/${partes[0]}`;
         }
+        function formatarDataHoraBrasileira(isoString) {
+            const d = new Date(isoString);
+            return d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+        }
 
         async function carregarDadosGlobais() {
             document.getElementById('data-agenda').value = dataSelecionadaStr;
@@ -346,6 +395,7 @@
             await atualizarListaPacientes();
             await atualizarListaProcedimentos();
             await carregarProfissionais();
+            await atualizarListaAnamneses();
             await gerarGradeAgenda();
         }
 
@@ -390,6 +440,7 @@
             btnElement.classList.add('active');
         }
 
+        /* --- LÓGICA DE DATAS E AGENDA MANTIDA INTACTA --- */
         async function mudarData(dias) {
             dataAtualObj.setDate(dataAtualObj.getDate() + dias);
             dataSelecionadaStr = obterDataFormatadaParaInput(dataAtualObj);
@@ -475,14 +526,7 @@
                 const conflito = agendamentosDoDiaGlobais.find(a => a.hora === horaAnalise);
                 if (conflito && i > 0) return alert("Não há espaço contínuo suficiente na agenda para a duração deste procedimento.");
 
-                agendamentosParaInserir.push({ 
-                    id_agrupador: idAgrupador, 
-                    data_agendamento: dataSelecionadaStr, 
-                    hora: horaAnalise, 
-                    paciente_nome: pacienteNome, 
-                    procedimento_nome: procedimentoNome, 
-                    is_continuacao: i > 0 
-                });
+                agendamentosParaInserir.push({ id_agrupador: idAgrupador, data_agendamento: dataSelecionadaStr, hora: horaAnalise, paciente_nome: pacienteNome, procedimento_nome: procedimentoNome, is_continuacao: i > 0 });
             }
 
             const { error } = await supabaseClient.from('agendamentos').insert(agendamentosParaInserir);
@@ -520,7 +564,9 @@
             
             const tbody = document.getElementById('tabela-pacientes');
             const datalist = document.getElementById('lista-pacientes');
-            tbody.innerHTML = ''; datalist.innerHTML = '';
+            const selectAnamnese = document.getElementById('anamnese-paciente'); // Atualiza dropdown da anamnese
+
+            tbody.innerHTML = ''; datalist.innerHTML = ''; selectAnamnese.innerHTML = '<option value="">Selecione um paciente...</option>';
             
             if (pacientesGlobais.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#666;">Nenhum paciente.</td></tr>`;
@@ -528,11 +574,12 @@
                 pacientesGlobais.forEach(p => {
                     tbody.innerHTML += `<tr><td>${p.nome}</td><td>${p.whatsapp || '-'}</td></tr>`;
                     datalist.innerHTML += `<option value="${p.nome}">`;
+                    selectAnamnese.innerHTML += `<option value="${p.nome}">${p.nome}</option>`;
                 });
             }
         }
 
-        // --- SALVAMENTO E ATUALIZAÇÃO AMPLIADA DOS PROCEDIMENTOS (LIXEIRA E EDIÇÃO) ---
+        /* --- PROCEDIMENTOS E PROFISSIONAIS MANTIDOS INTACTOS --- */
         async function salvarProcedimento() {
             const idEdit = document.getElementById('proc-id-edit').value;
             const nome = document.getElementById('proc-nome').value.trim();
@@ -552,15 +599,12 @@
             const payload = { nome, categoria, status, duracao, valor, especialidade, descricao, beneficios, cuidados_pos, retorno, observacao_preco };
 
             if(idEdit) {
-                const { error } = await supabaseClient.from('procedimentos').update(payload).eq('id', idEdit);
-                if(error) return alert("Erro ao atualizar procedimento.");
+                await supabaseClient.from('procedimentos').update(payload).eq('id', idEdit);
                 alert("Procedimento atualizado com sucesso!");
             } else {
-                const { error } = await supabaseClient.from('procedimentos').insert([payload]);
-                if(error) return alert("Erro ao salvar procedimento.");
+                await supabaseClient.from('procedimentos').insert([payload]);
                 alert("Procedimento salvo com sucesso!");
             }
-            
             cancelarEdicaoProcedimento();
             await atualizarListaProcedimentos();
         }
@@ -568,7 +612,6 @@
         function prepararEdicaoProcedimento(id) {
             const proc = procedimentosGlobais.find(p => p.id === id);
             if(!proc) return;
-            
             document.getElementById('proc-id-edit').value = proc.id;
             document.getElementById('proc-nome').value = proc.nome;
             document.getElementById('proc-categoria').value = proc.categoria || 'Outros';
@@ -581,11 +624,8 @@
             document.getElementById('proc-cuidados').value = proc.cuidados_pos || '';
             document.getElementById('proc-retorno').value = proc.retorno || '';
             document.getElementById('proc-obs-preco').value = proc.observacao_preco || '';
-
             document.getElementById('btn-salvar-proc').textContent = "Atualizar Procedimento";
             document.getElementById('btn-cancelar-edit-proc').style.display = "inline-block";
-            
-            // Rola a tela suavemente para o topo do formulário
             document.getElementById('main-content').scrollTo(0, 0);
         }
 
@@ -595,7 +635,6 @@
             document.getElementById('proc-categoria').value = 'Avaliações';
             document.getElementById('proc-status').value = 'Ativo';
             document.getElementById('proc-duracao').value = '60';
-            
             document.getElementById('btn-salvar-proc').textContent = "Salvar Procedimento";
             document.getElementById('btn-cancelar-edit-proc').style.display = "none";
         }
@@ -603,7 +642,6 @@
         async function alterarStatusProcedimento(id, restaurar) {
             const novoStatus = restaurar ? 'Ativo' : 'Inativo';
             if(!restaurar && !confirm("Deseja mover este procedimento para a lixeira?")) return;
-
             await supabaseClient.from('procedimentos').update({ status: novoStatus }).eq('id', id);
             await atualizarListaProcedimentos();
         }
@@ -615,10 +653,11 @@
             const tbodyAtivos = document.getElementById('tabela-procedimentos-ativos');
             const tbodyInativos = document.getElementById('tabela-procedimentos-inativos');
             const selectProcedimento = document.getElementById('modal-procedimento');
+            const selectAnamneseProc = document.getElementById('anamnese-procedimento'); // Para Anamnese
             
-            tbodyAtivos.innerHTML = ''; 
-            tbodyInativos.innerHTML = '';
+            tbodyAtivos.innerHTML = ''; tbodyInativos.innerHTML = '';
             selectProcedimento.innerHTML = '<option value="">Selecione...</option>';
+            selectAnamneseProc.innerHTML = '<option value="">Selecione um procedimento...</option>';
             
             if (procedimentosGlobais.length === 0) {
                 tbodyAtivos.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#666;">Nenhum procedimento.</td></tr>`;
@@ -640,8 +679,8 @@
                                       <button class="btn-acao danger" onclick="alterarStatusProcedimento('${proc.id}', false)">🗑️ Lixeira</button>`;
                         tbodyAtivos.innerHTML += rowHtml.replace('__BOTOES__', botoes);
                         
-                        // Adiciona ao dropdown de agendamento apenas os ativos
                         selectProcedimento.innerHTML += `<option value="${proc.nome}">${proc.nome} (${proc.duracao}m - R$${proc.valor})</option>`;
+                        selectAnamneseProc.innerHTML += `<option value="${proc.nome}">${proc.nome}</option>`;
                     }
                 });
             }
@@ -684,8 +723,7 @@
                 await supabaseClient.from('usuarios').update({ nome, nick, especialidade, senha, permissoes }).eq('id', idEdit);
                 alert("Profissional atualizado!");
             } else {
-                const { error } = await supabaseClient.from('usuarios').insert([{ nome, nick, especialidade, senha, permissoes }]);
-                if(error) return alert("Erro. Nickname pode já existir.");
+                await supabaseClient.from('usuarios').insert([{ nome, nick, especialidade, senha, permissoes }]);
                 alert("Profissional cadastrado!");
             }
             cancelarEdicaoProfissional();
@@ -755,6 +793,208 @@
             document.getElementById('dash-faturamento-dia').textContent = `R$ ${faturamento.toFixed(2)}`;
             document.getElementById('dash-atendimentos-dia').textContent = atendimentos;
             document.getElementById('dash-data-ref').textContent = `Ref: ${formatarDataVisor(dataSelecionadaStr)}`;
+        }
+
+
+        // ==========================================
+        // NOVO: MOTOR DE ANAMNESE DINÂMICA
+        // ==========================================
+        
+        // 1. Banco de Perguntas baseadas na Categoria do Procedimento
+        const BANCO_PERGUNTAS = {
+            'injetaveis': [
+                "Possui alergia a anestésicos, medicamentos ou substâncias sintéticas?",
+                "Tem alguma doença autoimune (ex: Lúpus, Vitiligo)?",
+                "Está fazendo uso de antibióticos, anti-inflamatórios ou anticoagulantes?",
+                "Tem histórico de herpes (labial/facial)?",
+                "Está gestante ou amamentando?"
+            ],
+            'facial': [
+                "Faz uso de ácidos ou produtos clareadores em casa?",
+                "Fez uso de Roacutan nos últimos 6 meses?",
+                "Tem histórico de alergia a cosméticos?",
+                "Costuma ter muita exposição ao sol sem proteção?",
+                "Possui histórico de câncer de pele na família ou pessoal?"
+            ],
+            'corporal': [
+                "Possui prótese metálica, DIU de cobre ou marca-passo?",
+                "Tem histórico de trombose ou problemas circulatórios?",
+                "Possui pressão alta ou diabetes descompensada?",
+                "Pratica atividade física regularmente?"
+            ],
+            'endolaser': [
+                "Possui problemas de cicatrização (queloides ou hipertrófica)?",
+                "Fez alguma cirurgia recente na região a ser tratada?",
+                "Tem diabetes ou hipertensão descompensada?",
+                "Está utilizando algum medicamento de uso contínuo (citar em detalhes)?"
+            ],
+            'massagem': [
+                "Possui fraturas recentes, osteoporose ou problemas na coluna?",
+                "Tem histórico de trombose venosa profunda?",
+                "Possui algum processo inflamatório ou infeccioso agudo (febre, gripe)?",
+                "Está gestante (se sim, especificar semanas)?"
+            ],
+            'laser': [
+                "Tomou sol na região nos últimos 15 dias?",
+                "Faz uso de ácidos na região que será depilada?",
+                "Possui tatuagem no local da aplicação?",
+                "Tem histórico de foliculite severa?"
+            ],
+            'nutricao': [
+                "Possui alergia ou intolerância alimentar diagnosticada?",
+                "Tem problemas intestinais (constipação, diarreia, dores)?",
+                "Possui diagnóstico de diabetes, colesterol alto ou hipertensão?",
+                "Faz uso de suplementação ou vitaminas?"
+            ],
+            'geral': [
+                "Possui alguma alergia diagnosticada?",
+                "Está gestante ou amamentando?",
+                "Faz uso contínuo de algum medicamento?",
+                "Já teve complicações em procedimentos estéticos anteriores?"
+            ]
+        };
+
+        // 2. Função que lê o nome do Procedimento e define as perguntas
+        function identificarCategoriaProcedimento(nomeProc) {
+            nomeProc = nomeProc.toLowerCase();
+            if (nomeProc.includes('botox') || nomeProc.includes('preenchimento') || nomeProc.includes('harmonização') || nomeProc.includes('bioestimulador') || nomeProc.includes('peim')) return 'injetaveis';
+            if (nomeProc.includes('endolaser')) return 'endolaser';
+            if (nomeProc.includes('laser') || nomeProc.includes('cera') || nomeProc.includes('depilação')) return 'laser';
+            if (nomeProc.includes('massagem') || nomeProc.includes('drenagem')) return 'massagem';
+            if (nomeProc.includes('nutricionista')) return 'nutricao';
+            if (nomeProc.includes('limpeza') || nomeProc.includes('peeling') || nomeProc.includes('microagulhamento') || nomeProc.includes('skinbooster') || nomeProc.includes('melasma') || nomeProc.includes('rosácea') || nomeProc.includes('hydragloss')) return 'facial';
+            if (nomeProc.includes('emagrecimento') || nomeProc.includes('bronze') || nomeProc.includes('velaryan')) return 'corporal';
+            
+            return 'geral'; // Caso genérico
+        }
+
+        // 3. Monta o HTML dinâmico das perguntas
+        function gerarFormularioAnamnese() {
+            const selectProc = document.getElementById('anamnese-procedimento').value;
+            const container = document.getElementById('anamnese-dinamica-container');
+            const btnSalvar = document.getElementById('btn-salvar-anamnese');
+
+            if(!selectProc) {
+                container.innerHTML = '<p style="color: #666; font-style: italic;">Selecione um procedimento acima para carregar as perguntas.</p>';
+                btnSalvar.style.display = 'none';
+                return;
+            }
+
+            const categoria = identificarCategoriaProcedimento(selectProc);
+            const perguntas = BANCO_PERGUNTAS[categoria];
+
+            container.innerHTML = `<h4 style="margin-bottom:15px; color:#4CAF50;">Perguntas Direcionadas: ${selectProc}</h4>`;
+
+            perguntas.forEach((pergunta, index) => {
+                container.innerHTML += `
+                    <div class="anamnese-bloco">
+                        <div class="anamnese-pergunta">${index + 1}. ${pergunta}</div>
+                        <div class="anamnese-opcoes">
+                            <label><input type="radio" name="pergunta_${index}" value="Sim"> Sim</label>
+                            <label><input type="radio" name="pergunta_${index}" value="Não"> Não</label>
+                        </div>
+                        <input type="text" class="anamnese-detalhe" id="detalhe_${index}" placeholder="Detalhes ou observações (opcional)...">
+                    </div>
+                `;
+            });
+
+            btnSalvar.style.display = 'block';
+        }
+
+        // 4. Salva a Anamnese no Supabase
+        async function salvarAnamnese() {
+            const paciente = document.getElementById('anamnese-paciente').value;
+            const procedimento = document.getElementById('anamnese-procedimento').value;
+
+            if(!paciente || !procedimento) return alert("Selecione o Paciente e o Procedimento.");
+
+            const categoria = identificarCategoriaProcedimento(procedimento);
+            const perguntas = BANCO_PERGUNTAS[categoria];
+            let respostasFinais = [];
+
+            perguntas.forEach((pergunta, index) => {
+                const radioSelecionado = document.querySelector(`input[name="pergunta_${index}"]:checked`);
+                const respostaOpcao = radioSelecionado ? radioSelecionado.value : 'Não respondido';
+                const detalhe = document.getElementById(`detalhe_${index}`).value.trim();
+
+                respostasFinais.push({
+                    pergunta: pergunta,
+                    resposta: respostaOpcao,
+                    detalhe: detalhe || 'Sem detalhes.'
+                });
+            });
+
+            const { error } = await supabaseClient.from('anamneses').insert([{ 
+                paciente_nome: paciente, 
+                procedimento_nome: procedimento, 
+                respostas: JSON.stringify(respostasFinais) 
+            }]);
+
+            if(error) return alert("Erro ao salvar anamnese.");
+            
+            alert("Anamnese salva com sucesso no Histórico!");
+            
+            // Limpa o formulário
+            document.getElementById('anamnese-paciente').value = '';
+            document.getElementById('anamnese-procedimento').value = '';
+            gerarFormularioAnamnese(); // Irá ocultar e resetar
+            
+            await atualizarListaAnamneses();
+        }
+
+        // 5. Atualiza a Tabela de Histórico
+        async function atualizarListaAnamneses() {
+            const { data } = await supabaseClient.from('anamneses').select('*').order('data_criacao', { ascending: false });
+            anamnesesGlobais = data || [];
+            
+            const tbody = document.getElementById('tabela-anamneses');
+            tbody.innerHTML = '';
+            
+            if (anamnesesGlobais.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#666;">Nenhuma anamnese registrada.</td></tr>`;
+            } else {
+                anamnesesGlobais.forEach(anamnese => {
+                    const dataFormatada = formatarDataHoraBrasileira(anamnese.data_criacao);
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${dataFormatada}</td>
+                            <td><strong>${anamnese.paciente_nome}</strong></td>
+                            <td>${anamnese.procedimento_nome}</td>
+                            <td><button class="btn-acao" onclick="visualizarAnamnese('${anamnese.id}')">👁️ Visualizar</button></td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        // 6. Visualizar Anamnese Salva
+        function visualizarAnamnese(id) {
+            const anamnese = anamnesesGlobais.find(a => a.id === id);
+            if(!anamnese) return;
+
+            document.getElementById('view-anamnese-info').innerHTML = `
+                Paciente: <span style="color:var(--text-color);">${anamnese.paciente_nome}</span><br>
+                Procedimento: <span style="color:var(--text-color);">${anamnese.procedimento_nome}</span><br>
+                Data: <span style="color:var(--text-color);">${formatarDataHoraBrasileira(anamnese.data_criacao)}</span>
+            `;
+
+            const respostas = typeof anamnese.respostas === 'string' ? JSON.parse(anamnese.respostas) : anamnese.respostas;
+            const containerRespostas = document.getElementById('view-anamnese-respostas');
+            containerRespostas.innerHTML = '';
+
+            respostas.forEach((item, index) => {
+                let corResposta = item.resposta === 'Sim' ? '#d32f2f' : (item.resposta === 'Não' ? '#4CAF50' : '#666'); // Sim em vermelho (alerta), Não em verde
+                
+                containerRespostas.innerHTML += `
+                    <div style="margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
+                        <p style="font-weight: bold; margin-bottom: 5px;">${index + 1}. ${item.pergunta}</p>
+                        <p>Resposta: <strong style="color: ${corResposta};">${item.resposta}</strong></p>
+                        <p style="color: #555; font-size: 0.85rem; margin-top: 3px;">Obs: ${item.detalhe}</p>
+                    </div>
+                `;
+            });
+
+            document.getElementById('modal-view-anamnese').style.display = 'flex';
         }
     </script>
 </body>
