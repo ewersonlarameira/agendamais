@@ -59,6 +59,11 @@
         .loader { text-align: center; padding: 20px; color: #666; font-style: italic; display: none; }
         
         .success-icon { font-size: 4rem; text-align: center; display: block; margin-bottom: 20px; }
+        
+        @media (max-width: 480px) {
+            .time-grid { grid-template-columns: repeat(2, 1fr); }
+            .step-card { padding: 20px; }
+        }
     </style>
 </head>
 <body>
@@ -132,7 +137,7 @@
     </div>
 
     <script>
-        // Configurações Padrões da Clínica (Usadas se não houver no banco)
+        // Configurações Padrões da Clínica
         const HORARIO_ABERTURA = 8;
         const HORARIO_FECHAMENTO = 18;
         const HORARIO_ALMOCO = "12:00";
@@ -336,7 +341,23 @@
             const partesData = dataEscolhida.split('-');
             const dataFormatada = `${partesData[2]}/${partesData[1]}/${partesData[0]}`;
             
-            const mensagem = `Olá, clínica Lumina's! Acabei de realizar um agendamento pelo aplicativo.\n\n*Meus Dados:*\n👤 Nome: ${nome}\n📱 Contato: ${whatsPaciente}\n\n*Detalhes do Agendamento:*\n✨ Procedimento: ${procedimentoEscolhido.nome}\n📅 Data: ${dataFormatada}\n⏰ Horário: ${horaEscolhida}\n\nAguardando confirmação!`;
+            // Códigos Unicode dos emojis para evitar quebras de caractere
+            const e_pessoa = '\uD83D\uDC64';
+            const e_celular = '\uD83D\uDCF1';
+            const e_brilho = '\u2728';
+            const e_calendario = '\uD83D\uDCC5';
+            const e_relogio = '\u23F0';
+            
+            // Montagem estruturada da mensagem
+            let mensagem = `Olá, clínica Lumina's! Acabei de realizar um agendamento pelo aplicativo.\n\n`;
+            mensagem += `*Meus Dados:*\n`;
+            mensagem += `${e_pessoa} Nome: ${nome}\n`;
+            mensagem += `${e_celular} Contato: ${whatsPaciente}\n\n`;
+            mensagem += `*Detalhes do Agendamento:*\n`;
+            mensagem += `${e_brilho} Procedimento: ${procedimentoEscolhido.nome}\n`;
+            mensagem += `${e_calendario} Data: ${dataFormatada}\n`;
+            mensagem += `${e_relogio} Horário: ${horaEscolhida}\n\n`;
+            mensagem += `Aguardando confirmação!`;
             
             const url = `https://wa.me/${CLINICA_WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
             window.open(url, '_blank');
