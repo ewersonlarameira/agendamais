@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina's Clínica Estética</title>
-    <!-- 1. Importação do Supabase -->
+    <!-- Importação do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- 2. Importação das suas Chaves de Configuração -->
+    <!-- Importação das suas Chaves de Configuração -->
     <script src="config.js"></script>
     
     <style>
@@ -167,7 +167,6 @@
         </div>
     </div>
 
-    <!-- LÓGICA PRINCIPAL (Sem credenciais) -->
     <script>
         let horaSelecionadaParaAgendamento = '';
         const HORARIOS_AGENDA = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
@@ -186,8 +185,8 @@
             const nick = document.getElementById('login-nick').value;
             const senha = document.getElementById('login-senha').value;
             
-            // "supabase" agora vem do arquivo config.js
-            const { data, error } = await supabase
+            // Usando supabaseClient (que vem do config.js)
+            const { data, error } = await supabaseClient
                 .from('usuarios')
                 .select('*')
                 .eq('nick', nick)
@@ -236,7 +235,7 @@
             const whatsapp = document.getElementById('pac-whatsapp').value.trim();
             if(!nome) return alert("O nome do paciente é obrigatório!");
 
-            const { error } = await supabase.from('pacientes').insert([{ nome, whatsapp }]);
+            const { error } = await supabaseClient.from('pacientes').insert([{ nome, whatsapp }]);
             if (error) return alert("Erro ao salvar paciente.");
             
             document.getElementById('pac-nome').value = '';
@@ -246,7 +245,7 @@
         }
 
         async function atualizarListaPacientes() {
-            const { data, error } = await supabase.from('pacientes').select('*').order('nome');
+            const { data, error } = await supabaseClient.from('pacientes').select('*').order('nome');
             if (error) return;
             
             pacientesGlobais = data;
@@ -272,7 +271,7 @@
             const valor = parseFloat(document.getElementById('proc-valor').value) || 0;
             if(!nome) return alert("Nome obrigatório!");
 
-            const { error } = await supabase.from('procedimentos').insert([{ nome, duracao, valor }]);
+            const { error } = await supabaseClient.from('procedimentos').insert([{ nome, duracao, valor }]);
             if(error) return alert("Erro ao salvar.");
             
             document.getElementById('proc-nome').value = '';
@@ -282,7 +281,7 @@
         }
 
         async function atualizarListaProcedimentos() {
-            const { data, error } = await supabase.from('procedimentos').select('*');
+            const { data, error } = await supabaseClient.from('procedimentos').select('*');
             if(error) return;
 
             procedimentosGlobais = data;
@@ -317,7 +316,7 @@
             if(document.getElementById('perm-profissionais').checked) permissoes.push('profissionais');
             if(document.getElementById('perm-configuracoes').checked) permissoes.push('configuracoes');
 
-            const { error } = await supabase.from('usuarios').insert([{ nome, nick, especialidade, senha, permissoes }]);
+            const { error } = await supabaseClient.from('usuarios').insert([{ nome, nick, especialidade, senha, permissoes }]);
             if(error) return alert("Erro ao cadastrar profissional. Nickname pode já existir.");
             
             alert("Profissional cadastrado!");
@@ -329,7 +328,7 @@
 
         // --- LÓGICA DA AGENDA (REAL TIME SUPABASE) ---
         async function gerarGradeAgenda() {
-            const { data: agendamentos, error } = await supabase.from('agendamentos').select('*');
+            const { data: agendamentos, error } = await supabaseClient.from('agendamentos').select('*');
             if (error) return console.error(error);
 
             const container = document.getElementById('grade-agenda');
@@ -407,7 +406,7 @@
                     return alert("Sem tempo antes do almoço/fim do expediente para 2 horas.");
                 }
 
-                const { data: conflito } = await supabase.from('agendamentos').select('*').eq('hora', proximaHora);
+                const { data: conflito } = await supabaseClient.from('agendamentos').select('*').eq('hora', proximaHora);
                 if (conflito.length > 0) return alert("O próximo horário já está ocupado.");
 
                 agendamentosParaInserir.push({ id_agrupador: idAgrupador, hora: proximaHora, paciente_nome: paciente, procedimento_nome: procedimentoNome, is_continuacao: true });
@@ -415,7 +414,7 @@
 
             agendamentosParaInserir.push({ id_agrupador: idAgrupador, hora: horaSelecionadaParaAgendamento, paciente_nome: paciente, procedimento_nome: procedimentoNome, is_continuacao: false });
 
-            const { error } = await supabase.from('agendamentos').insert(agendamentosParaInserir);
+            const { error } = await supabaseClient.from('agendamentos').insert(agendamentosParaInserir);
             if(error) return alert("Erro ao agendar.");
 
             fecharModal();
@@ -425,7 +424,7 @@
         async function cancelarAgendamento(idAgrupador, event) {
             event.stopPropagation(); 
             if(confirm(`Tem certeza que deseja cancelar este agendamento?`)) {
-                const { error } = await supabase.from('agendamentos').delete().eq('id_agrupador', idAgrupador);
+                const { error } = await supabaseClient.from('agendamentos').delete().eq('id_agrupador', idAgrupador);
                 if(error) return alert("Erro ao cancelar.");
                 gerarGradeAgenda();
             }
