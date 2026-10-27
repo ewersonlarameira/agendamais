@@ -1,0 +1,36 @@
+begin;
+do $$
+declare uid uuid:=gen_random_uuid();tid uuid;sid uuid;pid uuid;cid uuid;aid uuid;new_aid uuid;first_slot timestamptz;second_slot timestamptz;secret text;result jsonb;denied boolean:=false;
+begin
+ insert into auth.users(id,email,email_confirmed_at) values(uid,'flow-fixture@example.invalid',now());
+ insert into public.tenants(name,slug,responsible,email) values('Fluxo fixture','flow-fixture-'||substr(uid::text,1,8),'Fixture','flow-fixture@example.invalid') returning id into tid;
+ insert into public.licenses(tenant_id,starts_on,expires_on) values(tid,current_date-1,current_date+30);
+ insert into public.memberships(tenant_id,email,user_id,role) values(tid,'flow-fixture@example.invalid',uid,'admin');
+ insert into public.settings(tenant_id,data) values(tid,'{"days":[0,1,2,3,4,5,6],"opening":"09:00","closing":"18:00","min_notice":0,"max_days":30,"interval":15,"timezone":"America/Sao_Paulo"}');
+ insert into public.services(tenant_id,name,duration,price) values(tid,'Serviço fixture',30,35.50) returning id into sid;
+ insert into public.professionals(tenant_id,name,service_ids) values(tid,'Profissional fixture',array[sid]) returning id into pid;
+ select starts_at into first_slot from app_private.slots(tid,sid,pid,current_date+1) limit 1;
+ select value into secret from app_private.secrets where key='gateway';
+ result:=public.agenda_appointment_save('book',jsonb_build_object('slug','flow-fixture-'||substr(uid::text,1,8),'service_id',sid,'professional_id',pid,'starts_at',first_slot,'name','Cliente fixture','phone','24999999997','secret',secret,'ip','flow-fixture','payment_method','Pix'));
+ select id,customer_id into aid,cid from public.appointments where protocol=result->>'protocol';
+ if aid is null then raise exception 'FAIL public booking not persisted';end if;
+ perform set_config('request.jwt.claim.sub',uid::text,true);
+ perform public.agenda_appointment_save('status',jsonb_build_object('tenant_id',tid,'id',aid,'status','Confirmado','payment_method','Pix'));
+ select starts_at into second_slot from app_private.slots(tid,sid,pid,current_date+1) where starts_at>=first_slot+interval '1 hour' limit 1;
+ if second_slot is null then raise exception 'FAIL second slot unavailable';end if;
+ perform public.agenda_appointment_save('appointment',jsonb_build_object('tenant_id',tid,'id',aid,'professional_id',pid,'service_id',sid,'customer_id',cid,'starts_at',second_slot,'status','Agendado','payment_method','Cartão de crédito'));
+ if not exists(select 1 from public.appointments where id=aid and starts_at=second_slot and payment_method='Cartão de crédito') then raise exception 'FAIL reschedule not persisted';end if;
+ if not exists(select 1 from app_private.slots(tid,sid,pid,current_date+1) where starts_at=first_slot) then raise exception 'FAIL old slot not released';end if;
+ perform public.agenda_appointment_save('status',jsonb_build_object('tenant_id',tid,'id',aid,'status','Cancelado','payment_method','Cartão de crédito'));
+ if not exists(select 1 from app_private.slots(tid,sid,pid,current_date+1) where starts_at=second_slot) then raise exception 'FAIL cancelled slot not released';end if;
+ begin perform public.agenda_finance('save',jsonb_build_object('tenant_id',tid,'kind','income','appointment_id',aid,'due_on',current_date,'settled_on',current_date,'payment_method','Pix'));exception when others then denied:=true;end;
+ if not denied then raise exception 'FAIL cancelled booking accepted new receipt';end if;
+ perform public.agenda_appointment_save('appointment',jsonb_build_object('tenant_id',tid,'professional_id',pid,'service_id',sid,'customer_id',cid,'starts_at',second_slot,'status','Agendado','payment_method','Pix'));
+ select id into new_aid from public.appointments where tenant_id=tid and starts_at=second_slot and status='Agendado';
+ perform public.agenda_appointment_save('status',jsonb_build_object('tenant_id',tid,'id',new_aid,'status','Concluído','payment_method','Pix'));
+ result:=public.agenda_finance('save',jsonb_build_object('tenant_id',tid,'kind','income','appointment_id',new_aid,'amount',999,'due_on',current_date,'settled_on',current_date,'payment_method','Pix'));
+ if not exists(select 1 from public.financial_entries where id=(result->>'id')::uuid and amount=35.50 and appointment_id=new_aid and settled_on=current_date) then raise exception 'FAIL completed appointment receipt';end if;
+ if (select count(*) from public.appointments where tenant_id=tid)<>2 then raise exception 'FAIL reschedule duplicated the appointment';end if;
+end $$;
+select 'PASS: public booking, confirmation, reschedule, release of old slot, cancellation, release of cancelled slot, rejection of cancelled receipt, new booking, completion and server-priced financial receipt' as result;
+rollback;

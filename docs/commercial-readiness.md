@@ -9,7 +9,7 @@ Resultado: base técnica testada, com correção na exportação de dados; liber
 | Acesso público | Páginas inicial, demonstração, Master, empresa, painel da empresa, termos e privacidade respondem sem login no ChatGPT. |
 | Autorização | Requisições sem sessão não recebem dados Master, workspace, Financeiro, dispositivos ou exportação; bootstrap anônimo e operações internas recusados. |
 | Isolamento | Testes transacionais de agenda, Financeiro e Push confirmaram separação de empresas e permissões. Zero tabelas públicas sem RLS. |
-| Agendamento | Catálogo sem dados pessoais de clientes, horários, protocolo, recusa de duplicidade e bloqueio de empresa suspensa passaram no teste SQL com rollback. |
+| Agendamento | Catálogo sem dados pessoais de clientes, horários, protocolo, duplicidade e suspensão passaram. O fluxo integrado de reserva, confirmação, reagendamento, liberação de horários, cancelamento, conclusão e recebimento financeiro também passou com rollback. |
 | Documentos, planos e WhatsApp | Validação de CPF/CNPJ, exclusão lógica de plano sem perda de licença, persistência de pagamento/modelos, permissões, máscaras, placeholders, fuso e emojis passaram. |
 | Financeiro | Valores do servidor, duplicidade, versões concorrentes, validação de pagamento, anulação e auditoria passaram. |
 | Push | Opt-in/out, seleção de destinatários, fila, leases, logout, conteúdo e clique do Service Worker passaram nos testes isolados. A entrega em um aparelho real ainda não foi validada. |
@@ -18,7 +18,7 @@ Resultado: base técnica testada, com correção na exportação de dados; liber
 | Recuperação parcial | Exportação JSON financeira reconstituída em tabelas temporárias sem perda; criptografia AES-GCM recuperada byte a byte e adulterações recusadas. Não é um teste de recuperação do projeto inteiro. |
 | Código | TypeScript e testes de documentos, mensagens, Financeiro, Push e criptografia passaram. |
 
-As suítes `verify.sql`, `verify-new-features.sql`, `verify-finance.sql`, `verify-push.sql` e `verify-backup.sql` foram executadas com sucesso e terminaram em rollback. A suíte de novos recursos usa contas de fixture distintas para Master e administrador, sem retirar permissões de nenhuma conta. Nenhum tenant de fixture permaneceu no banco.
+As suítes `verify.sql`, `verify-new-features.sql`, `verify-finance.sql`, `verify-push.sql`, `verify-backup.sql` e `verify-booking-flow.sql` foram executadas com sucesso e terminaram em rollback. A suíte de novos recursos usa contas de fixture distintas para Master e administrador, sem retirar permissões de nenhuma conta. Nenhum tenant de fixture permaneceu no banco.
 
 ## Pendências para a operação
 
