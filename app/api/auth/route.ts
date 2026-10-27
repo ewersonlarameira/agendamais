@@ -1,9 +1,22 @@
 import {cookies} from 'next/headers';
-import {SB,KEY,guard,failure,rpc} from '../../../lib/agenda';
+import {SB,KEY,guard,failure,rpc,rpcNamed} from '../../../lib/agenda';
 import {getChatGPTUser} from '../../chatgpt-auth';
 async function auth(path:string,body:any,token?:string){const r=await fetch(SB+'/auth/v1/'+path,{method:path==='user'?'PUT':'POST',headers:{apikey:KEY,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(body)});const d:any=await r.json();if(!r.ok)throw new Error(d.msg||d.message||d.error_description||'Não foi possível autenticar.');return d;}
 export async function POST(req:Request){try{guard(req);const p:any=await req.json();const c=await cookies();let d:any;const origin=new URL(req.url).origin;const returnTo=typeof p.returnTo==='string'&&/^\/(?!\/)/.test(p.returnTo)?p.returnTo:'/master';const token=c.get('agenda_access')?.value;
-if(p.action==='logout'){if(token)await fetch(SB+'/auth/v1/logout?scope=global',{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+token}});c.delete('agenda_access');c.delete('agenda_refresh');return Response.json({ok:true});}
+if(p.action==='logout'){
+ let logoutToken=token;const refresh=c.get('agenda_refresh')?.value;
+ if(!logoutToken&&refresh)logoutToken=(await auth('token?grant_type=refresh_token',{refresh_token:refresh})).access_token;
+ if(logoutToken){
+  try{await rpcNamed('agenda_push_client',{op:'logout',p:{}},logoutToken)}catch{
+   if(!refresh)throw new Error('Entre novamente para encerrar os avisos com segurança.');
+   logoutToken=(await auth('token?grant_type=refresh_token',{refresh_token:refresh})).access_token;
+   await rpcNamed('agenda_push_client',{op:'logout',p:{}},logoutToken);
+  }
+  const signedOut=await fetch(SB+'/auth/v1/logout?scope=global',{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+logoutToken}});
+  if(!signedOut.ok)throw new Error('Não foi possível encerrar as sessões. Tente novamente.');
+ }
+ c.delete('agenda_access');c.delete('agenda_refresh');return Response.json({ok:true});
+}
 if(p.action==='reset'){await auth('recover?redirect_to='+encodeURIComponent(origin+returnTo),{email:p.email});return Response.json({message:'Se o e-mail estiver cadastrado, você receberá as instruções.'});}
 if(p.action==='password'){if(!token)throw new Error('Entre na sua conta.');if(p.password.length<10)throw new Error('Use pelo menos 10 caracteres.');await auth('user',{password:p.password},token);return Response.json({message:'Senha atualizada.'});}
 if(p.action==='refresh'){const refresh=c.get('agenda_refresh')?.value;if(!refresh)throw new Error('Entre na sua conta.');d=await auth('token?grant_type=refresh_token',{refresh_token:refresh});}
