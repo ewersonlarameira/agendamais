@@ -122,6 +122,16 @@ Aplique `database/plan-details-additions.sql` após as atualizações anteriores
 
 `database/verify-plan-details.sql` verifica persistência, edição anual, descrição com emojis e quebras de linha, leitura no Master, compatibilidade com planos antigos, preservação de licenças e autorização. Os dados de teste são revertidos com rollback.
 
+## Empresas: acesso inicial definido pelo Master
+
+Aplique `database/company-access-additions.sql` e publique `supabase/functions/agenda-company-access` antes da atualização da interface. Master → Empresas → Nova empresa exige e-mail, senha inicial e confirmação da senha. O Master recebe uma confirmação com o link do painel, e-mail e senha oculta, além de um botão para copiar os dados. A senha fica apenas no formulário e nessa confirmação em memória; ao fechar, não pode ser consultada novamente. Não existe opção de login com Google.
+
+A conta é criada pela API administrativa do Supabase Auth, com e-mail confirmado pelo provisionamento do Master, para acesso imediato. A Edge Function valida a sessão com Auth e a permissão Master no banco; a chave de serviço permanece exclusivamente no ambiente Edge. O fluxo não troca a sessão do Master pela do cliente. Senhas seguem diretamente para Auth e nunca para RPCs de negócio, auditoria ou backups JSON. As demais ativações de profissionais autorizados continuam disponíveis por e-mail e senha.
+
+O e-mail de uma conta existente não pode ter sua senha sobrescrita ao criar outra empresa. Uma interrupção após criar Auth pode deixar um acesso pendente, ainda sem permissão de empresa; o mesmo Master pode retomar usando o mesmo e-mail e link. Metadados administrativos permitem concluir sem duplicar a empresa nem recriar a conta. Nesse caso, a confirmação informa que vale a senha da primeira tentativa, sem exibir a senha digitada na repetição. Não são enviados e-mails nem mensagens automaticamente.
+
+`scripts/verify-company-access.mjs` verifica a orquestração com serviços simulados. `database/verify-company-access.sql` testa permissões, isolamento, proteção de contas existentes e retomada, com rollback dos dados de teste. A criação e o primeiro login de uma conta Auth real não foram testados nesta atualização: a revisão automática bloqueou o teste persistente sem limpeza no ambiente de produção.
+
 `database/verify-backup.sql` testa autorização, cobertura e reconstituição financeira em tabelas temporárias com rollback. `node scripts/verify-backup-crypto.mjs` testa a ferramenta de criptografia e sua integridade. `node scripts/verify-public-access.mjs` verifica o acesso público, bloqueios de APIs e ausência de dados privados no catálogo, sem criar contas nem enviar e-mails.
 
 O roteiro de operação, incluindo o que ainda não foi ativado, está em `docs/backup-and-recovery.md`. O resultado da conferência e as pendências de lançamento estão em `docs/commercial-readiness.md`. Não há backup automático externo nem recuperação de desastre completa homologada nesta entrega.
