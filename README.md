@@ -21,7 +21,7 @@ O primeiro Master é configurado com o e-mail recebido pelo cabeçalho confiáve
 
 O campo `tenant_id` e chaves estrangeiras compostas impedem referências de agendamentos a cadastros de outras empresas. Uma exclusion constraint sobre intervalos semiabertos impede sobreposição por profissional inclusive com concorrência. O servidor calcula preço e duração e consulta jornada, intervalos, datas sem expediente, prazo máximo e antecedência. Os status Cancelado e Não compareceu liberam a faixa de horário. Bloqueios usam a mesma tabela e constraint.
 
-E-mails autorizados são cadastrados pelo administrador; cada usuário cria a própria senha e confirma seu e-mail. Cookies de sessão são HttpOnly, SameSite=Lax e Secure em HTTPS. Nenhuma chave de serviço Supabase é usada. A chave publishable no código é pública por definição. Login e recuperação usam a API Supabase Auth; os limites nativos desse serviço continuam aplicáveis. Upload usa a sessão do usuário, políticas por pasta `tenant_id`, validação de assinatura PNG/JPEG e limite de 2 MB. O bucket contém somente branding público.
+E-mails autorizados são cadastrados pelo administrador; cada usuário cria a própria senha e confirma seu e-mail. Cookies de sessão são HttpOnly, SameSite=Lax e Secure em HTTPS. O navegador e o runtime do Site não usam chave de serviço Supabase; as Edge Functions utilizam a credencial protegida do próprio serviço. A chave publishable no código é pública por definição. Login e recuperação usam a API Supabase Auth; os limites nativos desse serviço continuam aplicáveis. Upload usa a sessão do usuário, políticas por pasta `tenant_id`, validação de assinatura PNG/JPEG e limite de 2 MB. O bucket contém somente branding público.
 
 ## Configuração de Auth antes da operação
 
@@ -43,12 +43,12 @@ Manifesto por estabelecimento com nome, início e logo quando disponível; ícon
 
 ## Backup e recuperação
 
-O Master oferece exportação JSON dos dados de negócio (não inclui senhas, arquivos binários ou estrutura do banco). Para recuperação completa, usar backup PostgreSQL e Storage do Supabase e manter o código versionado. Configurar periodicidade, retenção e armazenamento externo conforme o plano contratado; esta versão não cria uma rotina automática de backup. Testar restauração em projeto isolado antes de depender do procedimento. Nunca importar um JSON diretamente no navegador como restauração de produção sem validar vínculos, IDs e autorização.
+O Master oferece exportação JSON consistente dos dados de negócio, incluindo Financeiro, modelos de WhatsApp e auditoria, com limite de 8 MB (não inclui contas/senhas Auth, arquivos binários, segredos, dispositivos Push ou estrutura do banco). Para recuperação completa, usar backup PostgreSQL e Storage do Supabase e manter o código versionado. Configurar periodicidade, retenção e armazenamento externo conforme o plano contratado; esta versão não cria uma rotina automática de backup. Testar restauração em projeto isolado antes de depender do procedimento. Nunca importar um JSON diretamente no navegador como restauração de produção sem validar vínculos, IDs e autorização.
 
 ## Limites de lançamento
 
 - Domínio `agendamos.com.br` ainda é uma referência, sem DNS configurado nesta entrega.
-- Site inicialmente privado: acesso público sem ChatGPT exige mudar a audiência após preparar o Master.
+- O Site atual está público e dispensa login ChatGPT; os painéis exigem login do Agenda+. Novas instalações podem começar privadas até preparar o Master.
 - Pagamentos são registrados manualmente; não há cobrança recorrente ou envio automático de WhatsApp.
 - Termos e privacidade precisam da identificação do operador, canal de contato e prazos de retenção.
 - Backups automáticos, SMTP comercial e monitoração externa precisam de configuração operacional.
@@ -89,7 +89,7 @@ O Financeiro registra receitas e despesas, categorias, vencimentos, pagamentos, 
 
 Atendimentos sem lançamento aparecem na aba Atendimentos. O servidor usa o preço salvo no agendamento e uma restrição única impede dois lançamentos ativos para a mesma reserva. Não há baixa automática ao concluir o serviço. Recebimentos antecipados são possíveis; cancelamentos exigem revisão do lançamento e eventual reembolso manual como despesa. Valores são integrais por atendimento nesta versão, sem parcelamento ou baixa parcial. Taxas, comissões e despesas devem ser lançadas manualmente. O registro não realiza cobrança ou transferência bancária.
 
-Edições e baixas verificam a versão do lançamento para evitar sobreposição de alterações simultâneas. Anulações preservam a linha original e a auditoria, removendo seu efeito dos totais; não estornam valores bancários. O CSV exporta os lançamentos do período e filtros atuais, com proteção contra fórmulas de planilha. A exportação JSON anterior do Master não inclui o novo livro financeiro: use a exportação CSV no Financeiro e o backup PostgreSQL para preservação completa, inclusive auditoria.
+Edições e baixas verificam a versão do lançamento para evitar sobreposição de alterações simultâneas. Anulações preservam a linha original e a auditoria, removendo seu efeito dos totais; não estornam valores bancários. O CSV exporta os lançamentos do período e filtros atuais, com proteção contra fórmulas de planilha. A exportação JSON do Master inclui o livro financeiro e a auditoria na versão atual. CSV continua disponível no Financeiro. Recuperação completa também exige cópia PostgreSQL, Auth e dos binários do Storage.
 
 Verificações: `node scripts/verify-finance.mjs` cobre cálculos em centavos, datas de caixa, deduplicação de recebíveis, anulação, fuso e CSV. `database/verify-finance.sql` usa fixtures transacionais com rollback e verifica persistência, preço do servidor, duplicidade, isolamento, permissões de profissional, empresa suspensa, concorrência de versões, validação e auditoria. Dados demonstrativos ficam em memória e não são gravados na produção.
 
@@ -109,3 +109,13 @@ As chaves VAPID e os parâmetros do dispatcher são provisionados separadamente 
 Desativar interrompe os avisos da empresa naquele aparelho. Encerrar todas as sessões desativa as inscrições do usuário em todos os dispositivos antes do logout; o mesmo navegador pode reativá-las ao entrar novamente. Um botão de teste envia somente para a própria inscrição e tem limite de um teste por minuto. A exportação JSON de negócio do Master não inclui inscrições/filas; use backup PostgreSQL para recuperação operacional completa.
 
 Verificação: `node scripts/verify-push.mjs` testa conteúdo completo, fuso, dia da semana, destinos permitidos, exibição pelo Service Worker, tags e clique seguro. `database/verify-push.sql` testa opt-in/out, isolamento de empresas/profissionais, ausência de segredos na resposta, trigger somente de novos agendamentos, leases concorrentes, logout e privilégios usando fixtures com rollback. A Edge Function publicada respondeu 401 sem credencial/com credencial inválida e 200 com a autenticação de serviço; a geração criptográfica foi validada dentro do próprio runtime sem enviar mensagens. A entrega em um aparelho real depende da ativação e do botão de teste nesse aparelho; não foi solicitada permissão no navegador de QA.
+
+## Conferência comercial e correção do backup Master
+
+O acesso público sem login ChatGPT foi ativado e verificado. Painéis e APIs de dados continuam dependentes de autenticação do Agenda+.
+
+Aplique também `database/backup-additions.sql` em instalações novas. A exportação Master passa a usar `agenda_backup_export`, com fotografia consistente e limite de 8 MB, incluindo Financeiro, auditoria e modelos de WhatsApp. Substitui a exportação JSON anterior, que não incluía todos esses dados. Os avisos anteriores sobre exclusão do Financeiro descrevem a versão antiga. Auth, binários do Storage, segredos e inscrições/filas Push continuam excluídos da cópia de negócio.
+
+`database/verify-backup.sql` testa autorização, cobertura e reconstituição financeira em tabelas temporárias com rollback. `node scripts/verify-backup-crypto.mjs` testa a ferramenta de criptografia e sua integridade. `node scripts/verify-public-access.mjs` verifica o acesso público, bloqueios de APIs e ausência de dados privados no catálogo, sem criar contas nem enviar e-mails.
+
+O roteiro de operação, incluindo o que ainda não foi ativado, está em `docs/backup-and-recovery.md`. O resultado da conferência e as pendências de lançamento estão em `docs/commercial-readiness.md`. Não há backup automático externo nem recuperação de desastre completa homologada nesta entrega.

@@ -1,12 +1,12 @@
 begin;
 do $$
-declare uid uuid:=gen_random_uuid();plan uuid;ta uuid;tb uuid;sid uuid;pro uuid;slot timestamptz;booking jsonb;state jsonb;denied boolean:=false;secret text;
+declare uid uuid:=gen_random_uuid();master_uid uuid:=gen_random_uuid();plan uuid;ta uuid;tb uuid;sid uuid;pro uuid;slot timestamptz;booking jsonb;state jsonb;denied boolean:=false;secret text;
 begin
 if not app_private.valid_document('CPF','529.982.247-25') or app_private.valid_document('CPF','11111111111') then raise exception 'FAIL CPF validation';end if;
 if not app_private.valid_document('CNPJ','00.000.000/E08G-12') or app_private.valid_document('CNPJ','00.000.000/E08G-13') then raise exception 'FAIL CNPJ validation';end if;
-insert into auth.users(id,email,email_confirmed_at) values(uid,'feature-fixture@example.invalid',now());
-insert into public.platform_admins values(uid);
-perform set_config('request.jwt.claim.sub',uid::text,true);
+insert into auth.users(id,email,email_confirmed_at) values(uid,'feature-fixture@example.invalid',now()),(master_uid,'master-feature-fixture@example.invalid',now());
+insert into public.platform_admins values(master_uid);
+perform set_config('request.jwt.claim.sub',master_uid::text,true);
 insert into public.plans(name,amount,months) values('Fixture transacional',39.90,1) returning id into plan;
 perform public.agenda_company_save('create_tenant',jsonb_build_object('name','Fixture A','slug','feature-fixture-a','responsible','Teste','email','feature-fixture@example.invalid','phone','24999999999','document_type','CPF','document_number','529.982.247-25','plan_id',plan,'starts_on',current_date,'expires_on',current_date+30,'amount',39.90));
 select id into ta from public.tenants where slug='feature-fixture-a';
@@ -17,7 +17,8 @@ perform public.agenda_delete_plan(jsonb_build_object('id',plan));
 if not exists(select 1 from public.plans where id=plan and deleted_at is not null and not active) or not exists(select 1 from public.licenses where tenant_id=ta and plan_id=plan) then raise exception 'FAIL plan removal destroyed existing license';end if;
 begin perform public.agenda_company_save('create_tenant',jsonb_build_object('document_type','CPF','document_number','52998224725','plan_id',plan));exception when others then denied:=true;end;
 if not denied then raise exception 'FAIL deleted plan can be purchased';end if;
-delete from public.platform_admins where user_id=uid;
+-- Switch between distinct fixture accounts; never remove a Master grant.
+perform set_config('request.jwt.claim.sub',uid::text,true);
 update public.settings set data='{"days":[0,1,2,3,4,5,6],"opening":"09:00","closing":"18:00","min_notice":0,"max_days":30}' where tenant_id=ta;
 insert into public.services(tenant_id,name,duration,price) values(ta,'Teste',30,35.50) returning id into sid;
 insert into public.professionals(tenant_id,name,service_ids) values(ta,'Fixture',array[sid]) returning id into pro;

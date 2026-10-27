@@ -43,3 +43,9 @@ yarn-error.log*
 
 # OS metadata
 .DS_Store
+
+# Private operational backups and encrypted dumps
+/private-backups/
+*.dump
+*.dump.enc
+*.dump.enc.sha256

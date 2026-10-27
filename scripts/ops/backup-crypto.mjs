@@ -1,0 +1,9 @@
+import {createCipheriv,createDecipheriv,randomBytes} from 'node:crypto';
+import {Transform} from 'node:stream';
+import {pipeline} from 'node:stream/promises';
+import {createReadStream} from 'node:fs';
+import {open,unlink} from 'node:fs/promises';
+export const MAGIC=Buffer.from('AGENDAPLUS-PGDUMP-1\n');
+export function readBackupKey(value){if(typeof value!=='string'||!/^[A-Za-z0-9+/]{43}=$/.test(value))throw new Error('BACKUP_KEY_BASE64 deve ser uma chave aleatória de 32 bytes em Base64.');const b=Buffer.from(value,'base64');if(b.length!==32)throw new Error('Chave de backup inválida.');return b;}
+export async function encryptDump(input,output,key){const iv=randomBytes(12);const cipher=createCipheriv('aes-256-gcm',key,iv);const outputHandle=await open(output,'wx',0o600);const out=outputHandle.createWriteStream();out.write(Buffer.concat([MAGIC,iv]));try{await pipeline(createReadStream(input),cipher,new Transform({transform(c,_,cb){cb(null,c)},flush(cb){this.push(cipher.getAuthTag());cb()}}),out);}catch(e){await unlink(output).catch(()=>{});throw e;}}
+export async function decryptDump(input,output,key){const f=await open(input,'r');let size,header;try{size=(await f.stat()).size;header=Buffer.alloc(MAGIC.length+12);await f.read(header,0,header.length,0);if(size<header.length+16||!header.subarray(0,MAGIC.length).equals(MAGIC))throw new Error('Formato de backup inválido.');const tag=Buffer.alloc(16);await f.read(tag,0,16,size-16);const decipher=createDecipheriv('aes-256-gcm',key,header.subarray(MAGIC.length));decipher.setAuthTag(tag);const outputHandle=await open(output,'wx',0o600);try{await pipeline(createReadStream(input,{start:header.length,end:size-17}),decipher,outputHandle.createWriteStream());}catch{await unlink(output).catch(()=>{});throw new Error('Falha de integridade: chave incorreta ou backup alterado.');}}finally{await f.close();}}
