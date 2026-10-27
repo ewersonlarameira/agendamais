@@ -1,9 +1,9 @@
 // @deno-types="npm:@types/web-push@3.6.4"
 import webpush from 'npm:web-push@3.6.7';
-import {timingSafeEqual,createECDH,randomBytes} from 'node:crypto';
+import {timingSafeEqual,createECDH,randomBytes,createHmac} from 'node:crypto';
 import {allowedPushEndpoint,pushPayload} from './payload.ts';
 
-// Only the database dispatcher knows this endpoint's private authentication key.
+// The private dispatcher signs each request with a short-lived HMAC; transport headers never contain its secret.
 // Supabase's built-in service role stays inside the Edge runtime, never in Sites/browser/source.
 async function rpc(op:string,p:Record<string,unknown>={}){
  const key=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');const url=Deno.env.get('SUPABASE_URL');
@@ -15,9 +15,11 @@ async function rpc(op:string,p:Record<string,unknown>={}){
 Deno.serve(async(req:Request)=>{
  if(req.method!=='POST')return new Response('Method not allowed',{status:405});
  const supplied=req.headers.get('x-agenda-push')||'';
- if(!/^[a-f0-9]{64}$/.test(supplied))return new Response('Unauthorized',{status:401});
+ const stamp=req.headers.get('x-agenda-timestamp')||'';const nonce=req.headers.get('x-agenda-nonce')||'';const purpose=req.headers.get('x-agenda-check')||'dispatch';
+ if(!/^[a-f0-9]{64}$/.test(supplied)||!/^\d{10}$/.test(stamp)||!/^[a-f0-9]{32}$/.test(nonce)||!['dispatch','crypto'].includes(purpose)||Math.abs(Date.now()/1000-Number(stamp))>60)return new Response('Unauthorized',{status:401});
  try{
-  const config=await rpc('config');const expected=config?.push_dispatch||'';
+  const config=await rpc('config');if(!config?.push_dispatch)return new Response('Service unavailable',{status:503});
+  const expected=createHmac('sha256',config.push_dispatch).update('agenda-push:'+stamp+':'+nonce+':'+purpose).digest('hex');
   if(expected.length!==supplied.length||!timingSafeEqual(new TextEncoder().encode(expected),new TextEncoder().encode(supplied)))return new Response('Unauthorized',{status:401});
   if(!config.push_vapid_public||!config.push_vapid_private||!config.push_origin)return new Response('Service unavailable',{status:503});
   if(req.headers.get('x-agenda-check')==='crypto'){

@@ -40,6 +40,7 @@ begin
  perform set_config('request.jwt.claim.sub',prof_uid::text,true);
  perform public.agenda_push_client('unregister',jsonb_build_object('tenant_id',ta,'endpoint',ep||'-pro'));
  if exists(select 1 from public.push_subscriptions where user_id=prof_uid and active) then raise exception 'FAIL opt-out';end if;
+ if position('extensions.hmac' in pg_get_functiondef('app_private.kick_push()'::regprocedure))=0 then raise exception 'FAIL unsigned transport credentials';end if;
  if has_function_privilege('anon','public.agenda_push_client(text,jsonb)','EXECUTE') or has_function_privilege('authenticated','public.agenda_push_worker(text,jsonb)','EXECUTE') or has_table_privilege('authenticated','public.push_subscriptions','SELECT') then raise exception 'FAIL excessive privileges';end if;
 end $$;
 select 'PASS: opt-in/out, tenant and professional isolation, destination validation, no secrets to client, booking-only trigger, lease concurrency, acknowledgements, logout and grants' as result;
