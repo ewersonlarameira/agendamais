@@ -116,6 +116,12 @@ O acesso público sem login ChatGPT foi ativado e verificado. Painéis e APIs de
 
 Aplique também `database/backup-additions.sql` em instalações novas. A exportação Master passa a usar `agenda_backup_export`, com fotografia consistente e limite de 8 MB, incluindo Financeiro, auditoria e modelos de WhatsApp. Substitui a exportação JSON anterior, que não incluía todos esses dados. Os avisos anteriores sobre exclusão do Financeiro descrevem a versão antiga. Auth, binários do Storage, segredos e inscrições/filas Push continuam excluídos da cópia de negócio.
 
+## Planos: renovação e descrição
+
+Aplique `database/plan-details-additions.sql` após as atualizações anteriores. Em Master → Planos, novos planos permitem renovação mensal (1 mês) ou anual (12 meses), valor total por período e descrição de até 4.000 caracteres. As quebras de linha são preservadas nos cartões. Planos antigos com outro período podem mantê-lo durante a edição. O cadastro de empresa usa a duração do plano para sugerir o vencimento. A cobrança continua manual; editar um plano não altera valores nem vencimentos das licenças existentes. Os campos também integram a exportação de dados de negócio.
+
+`database/verify-plan-details.sql` verifica persistência, edição anual, descrição com emojis e quebras de linha, leitura no Master, compatibilidade com planos antigos, preservação de licenças e autorização. Os dados de teste são revertidos com rollback.
+
 `database/verify-backup.sql` testa autorização, cobertura e reconstituição financeira em tabelas temporárias com rollback. `node scripts/verify-backup-crypto.mjs` testa a ferramenta de criptografia e sua integridade. `node scripts/verify-public-access.mjs` verifica o acesso público, bloqueios de APIs e ausência de dados privados no catálogo, sem criar contas nem enviar e-mails.
 
 O roteiro de operação, incluindo o que ainda não foi ativado, está em `docs/backup-and-recovery.md`. O resultado da conferência e as pendências de lançamento estão em `docs/commercial-readiness.md`. Não há backup automático externo nem recuperação de desastre completa homologada nesta entrega.
