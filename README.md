@@ -39,7 +39,7 @@ Validações realizadas: TypeScript, build de produção, testes transacionais e
 
 ## PWA
 
-Manifesto por estabelecimento com nome, início e logo quando disponível; ícones Agenda+ 192 e 512 como fallback. Service Worker versão 1 cacheia somente ícones estáticos. Sessões, clientes, catálogos, disponibilidade e reservas não são armazenados em cache. Não se confirmam reservas offline. No iOS, a instalação depende de “Adicionar à Tela de Início”.
+Manifesto por estabelecimento com nome, início e logo quando disponível; ícones Agenda+ 192 e 512 como fallback. Service Worker versão 2 cacheia somente ícones estáticos. Sessões, clientes, catálogos, disponibilidade e reservas não são armazenados em cache. Não se confirmam reservas offline. No iOS, a instalação depende de “Adicionar à Tela de Início”.
 
 ## Backup e recuperação
 
@@ -77,3 +77,18 @@ Verificações específicas: `node --experimental-strip-types scripts/verify-new
 ## Identidade visual neon
 
 As cinco paletas mantêm seus identificadores anteriores e passam a usar fundos escuros com acentos neon: Black Gold (dourado), Ocean Blue (ciano), Emerald (verde), Urban Red (vermelho rosado) e Classic Barber (âmbar). O mesmo tema atende painel e página pública. `lib/theme.ts` centraliza as cores e o contraste dos botões; `app/neon.css` reúne os estilos. A seção Aparência inclui uma prévia antes de salvar. As cores personalizadas continuam disponíveis e o manifesto PWA acompanha o fundo da paleta do estabelecimento. Brilhos são estáticos, sem animações pulsantes, preservando os tamanhos de texto e os controles móveis já existentes.
+
+
+## Financeiro e navegação
+
+Ordem do painel do estabelecimento: Agenda, Clientes, Profissionais, Procedimentos, WhatsApp, Financeiro e Configurações. No celular, o menu inferior permite rolagem horizontal com controles de tamanho legível. O símbolo A+ foi removido; cabeçalhos e ícones utilizam a marca agenda+ por extenso.
+
+Para reproduzir o banco, aplique também `database/finance-additions.sql` depois das duas estruturas anteriores. A migration adiciona somente a tabela financeira e sua RPC autorizada; não modifica os gateways de agendamento ou autenticação. RLS bloqueia acesso direto; a função privada exige sessão, administrador da empresa (ou Master), tenant e licença ativa. Profissionais e visitantes não recebem acesso ao financeiro.
+
+O Financeiro registra receitas e despesas, categorias, vencimentos, pagamentos, forma de pagamento e observações. Possui filtros de período/tipo/situação/busca, indicadores de caixa, contas a receber e a pagar, fluxo diário e receitas por forma de pagamento. Pagos usam a data efetiva de pagamento; pendentes usam vencimento. O resultado é a movimentação registrada no período, não um saldo bancário conciliado. A previsão da agenda fica separada dos serviços concluídos a receber. O período consultado é limitado a 366 dias; o histórico permanece armazenado e pode ser consultado por outros intervalos.
+
+Atendimentos sem lançamento aparecem na aba Atendimentos. O servidor usa o preço salvo no agendamento e uma restrição única impede dois lançamentos ativos para a mesma reserva. Não há baixa automática ao concluir o serviço. Recebimentos antecipados são possíveis; cancelamentos exigem revisão do lançamento e eventual reembolso manual como despesa. Valores são integrais por atendimento nesta versão, sem parcelamento ou baixa parcial. Taxas, comissões e despesas devem ser lançadas manualmente. O registro não realiza cobrança ou transferência bancária.
+
+Edições e baixas verificam a versão do lançamento para evitar sobreposição de alterações simultâneas. Anulações preservam a linha original e a auditoria, removendo seu efeito dos totais; não estornam valores bancários. O CSV exporta os lançamentos do período e filtros atuais, com proteção contra fórmulas de planilha. A exportação JSON anterior do Master não inclui o novo livro financeiro: use a exportação CSV no Financeiro e o backup PostgreSQL para preservação completa, inclusive auditoria.
+
+Verificações: `node scripts/verify-finance.mjs` cobre cálculos em centavos, datas de caixa, deduplicação de recebíveis, anulação, fuso e CSV. `database/verify-finance.sql` usa fixtures transacionais com rollback e verifica persistência, preço do servidor, duplicidade, isolamento, permissões de profissional, empresa suspensa, concorrência de versões, validação e auditoria. Dados demonstrativos ficam em memória e não são gravados na produção.

@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+import {readFileSync} from 'node:fs';
+const source=readFileSync(new URL('../lib/finance.ts',import.meta.url),'utf8');
+const js=ts.transpile(source,{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022});
+const {financeTotals,financeSlice,financeCsv,financeDate}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+const base={id:'e1',kind:'income',description:'Serviço',category:'Atendimentos',amount:0.10,due_on:'2026-09-30',settled_on:'2026-10-01',payment_method:'Pix',notes:'',appointment_id:'a1',voided_at:null,version:1};
+const entries=[base,{...base,id:'e2',amount:0.20,appointment_id:null},{...base,id:'e3',kind:'expense',amount:0.10,appointment_id:null},{...base,id:'e4',settled_on:null,due_on:'2026-10-02',amount:50,appointment_id:null},{...base,id:'e5',amount:900,voided_at:'2026-10-01'}];
+const appointments=[{id:'a1',starts_at:'2026-10-01T13:00:00Z',status:'Concluído',price:10},{id:'a2',starts_at:'2026-10-01T14:00:00Z',status:'Concluído',price:35},{id:'a3',starts_at:'2026-10-01T15:00:00Z',status:'Confirmado',price:25}];
+const result=financeSlice(entries,appointments,'2026-10-01','2026-10-31');
+assert.equal(result.entries.length,5);assert.deepEqual(result.appointments.map(a=>a.id),['a2','a3']);
+assert.deepEqual(financeTotals(result),{income:0.3,expense:0.1,balance:0.2,pendingIncome:85,pendingExpense:0,forecast:25});
+assert.equal(financeSlice(entries,appointments,'2026-09-01','2026-09-30').entries.length,0);
+assert.equal(financeDate('2026-10-02T01:00:00Z'),'2026-10-01');
+const csv=financeCsv([{...base,description:' =HYPERLINK("evil")'}]);assert(csv.includes("' =HYPERLINK"));assert(csv.includes('"0,10"'));
+console.log('PASS: integer-cent totals, cash dates, receivable deduplication, void exclusion, timezone and safe CSV export');
