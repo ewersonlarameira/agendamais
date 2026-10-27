@@ -73,3 +73,7 @@ Cada agendamento armazena `payment_method` (A combinar, Pix, Dinheiro, Cartão d
 Em telas pequenas, as tabelas viram cartões, controles têm altura mínima de 44–48 px e os campos usam fonte 16 px. As páginas foram conferidas em quadros de 360 e 390 px, com medição de ausência de rolagem horizontal; a reserva pública e o formulário CPF/CNPJ usam o mesmo estilo móvel. As rotas temporárias de QA não fazem parte da publicação.
 
 Verificações específicas: `node --experimental-strip-types scripts/verify-new-features.mjs` e `database/verify-new-features.sql` (fixtures transacionais e rollback). Cobrem documentos, exclusão de plano vinculado sem perda de licença, pagamento, templates, isolamento de empresas e permissões. O hash da função central do gateway permaneceu igual após a atualização.
+
+## Identidade visual neon
+
+As cinco paletas mantêm seus identificadores anteriores e passam a usar fundos escuros com acentos neon: Black Gold (dourado), Ocean Blue (ciano), Emerald (verde), Urban Red (vermelho rosado) e Classic Barber (âmbar). O mesmo tema atende painel e página pública. `lib/theme.ts` centraliza as cores e o contraste dos botões; `app/neon.css` reúne os estilos. A seção Aparência inclui uma prévia antes de salvar. As cores personalizadas continuam disponíveis e o manifesto PWA acompanha o fundo da paleta do estabelecimento. Brilhos são estáticos, sem animações pulsantes, preservando os tamanhos de texto e os controles móveis já existentes.
