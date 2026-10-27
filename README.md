@@ -1,0 +1,75 @@
+# Agenda+ V1
+
+Aplicação SaaS multiempresa para barbearias. React 19, TypeScript e Vinext em Cloudflare Workers pelo Sites; Supabase PostgreSQL, Auth e Storage. Interface em português do Brasil; fuso America/Sao_Paulo.
+
+## Rotas
+
+- `/`: demonstração administrativa em memória, identificada como exemplo.
+- `/demo`: simulação do agendamento público, sem gravar dados.
+- `/master`: autenticação, configuração inicial e painel Master.
+- `/:slug`: catálogo e agendamento público real.
+- `/:slug/admin`: administração do estabelecimento.
+- `/privacidade` e `/termos`: textos iniciais, com identificação e retenção a completar antes da operação comercial.
+
+## Dados e autorização
+
+Projeto Supabase exclusivo: `iktpbxfaygcvjkrajycy`, região São Paulo. Nenhum dado da Lumina’s ou do AgendaMais foi utilizado ou alterado.
+
+O banco aplica RLS em todas as tabelas públicas. Os clientes não têm acesso direto às tabelas; o gateway RPC chama uma função privilegiada no esquema não exposto `app_private`, com autorização explícita em cada operação. Não usa `user_metadata` para permissões. Vínculos administrativos dependem de e-mail confirmado em `auth.users`. O Master possui associação explícita em `platform_admins`. Profissionais recebem apenas sua agenda e os clientes relacionados.
+
+O primeiro Master é configurado com o e-mail recebido pelo cabeçalho confiável do Sites no ambiente inicialmente privado. Uma chave secreta de gateway, armazenada no runtime e em tabela privada, protege o bootstrap e a reserva pública. O bootstrap fecha após o primeiro Master. Não tornar o Site público antes de concluir essa configuração.
+
+O campo `tenant_id` e chaves estrangeiras compostas impedem referências de agendamentos a cadastros de outras empresas. Uma exclusion constraint sobre intervalos semiabertos impede sobreposição por profissional inclusive com concorrência. O servidor calcula preço e duração e consulta jornada, intervalos, datas sem expediente, prazo máximo e antecedência. Os status Cancelado e Não compareceu liberam a faixa de horário. Bloqueios usam a mesma tabela e constraint.
+
+E-mails autorizados são cadastrados pelo administrador; cada usuário cria a própria senha e confirma seu e-mail. Cookies de sessão são HttpOnly, SameSite=Lax e Secure em HTTPS. Nenhuma chave de serviço Supabase é usada. A chave publishable no código é pública por definição. Login e recuperação usam a API Supabase Auth; os limites nativos desse serviço continuam aplicáveis. Upload usa a sessão do usuário, políticas por pasta `tenant_id`, validação de assinatura PNG/JPEG e limite de 2 MB. O bucket contém somente branding público.
+
+## Configuração de Auth antes da operação
+
+No Supabase Authentication > URL Configuration, definir o Site URL com o endereço publicado e permitir `https://agenda-plus.ewersonlarameira.chatgpt.site/**`. O conector utilizado não possui operação para alterar essa configuração. Depois de vincular domínio próprio, adicionar o novo endereço também. Configurar SMTP de produção: o serviço de e-mail padrão do Supabase tem limitações de destinatários e envio e não é adequado para comercialização.
+
+No Site, abrir `/master` e escolher “Configuração inicial do proprietário”. Definir a senha e confirmar o e-mail. Depois entrar, definir os valores dos planos e cadastrar as empresas. Nenhuma senha padrão é criada. As empresas iniciam sem clientes, profissionais e serviços fictícios.
+
+## Banco e verificação
+
+`database/schema.sql` documenta a estrutura para um banco novo. A chave de gateway não está nesse arquivo e deve ser configurada separadamente. As alterações reais possuem histórico de migrations no Supabase.
+
+`database/verify.sql` é um teste transacional com rollback. Ele cria fixtures temporárias, verifica catálogo sem dados pessoais, geração de horários, reserva com protocolo, recusa de duplicidade, isolamento entre empresas e bloqueio de empresa suspensa. Nenhuma fixture permanece gravada.
+
+Validações realizadas: TypeScript, build de produção, testes transacionais e Advisors de segurança. Informações de índices ainda não utilizados são esperadas em banco recém-criado.
+
+## PWA
+
+Manifesto por estabelecimento com nome, início e logo quando disponível; ícones Agenda+ 192 e 512 como fallback. Service Worker versão 1 cacheia somente ícones estáticos. Sessões, clientes, catálogos, disponibilidade e reservas não são armazenados em cache. Não se confirmam reservas offline. No iOS, a instalação depende de “Adicionar à Tela de Início”.
+
+## Backup e recuperação
+
+O Master oferece exportação JSON dos dados de negócio (não inclui senhas, arquivos binários ou estrutura do banco). Para recuperação completa, usar backup PostgreSQL e Storage do Supabase e manter o código versionado. Configurar periodicidade, retenção e armazenamento externo conforme o plano contratado; esta versão não cria uma rotina automática de backup. Testar restauração em projeto isolado antes de depender do procedimento. Nunca importar um JSON diretamente no navegador como restauração de produção sem validar vínculos, IDs e autorização.
+
+## Limites de lançamento
+
+- Domínio `agendamos.com.br` ainda é uma referência, sem DNS configurado nesta entrega.
+- Site inicialmente privado: acesso público sem ChatGPT exige mudar a audiência após preparar o Master.
+- Pagamentos são registrados manualmente; não há cobrança recorrente ou envio automático de WhatsApp.
+- Termos e privacidade precisam da identificação do operador, canal de contato e prazos de retenção.
+- Backups automáticos, SMTP comercial e monitoração externa precisam de configuração operacional.
+- A agenda oferece listagens por dia, semana e mês; não há arrastar/soltar ou grade mensal.
+- Não há busca pública de nome por telefone: reutilização acontece internamente no banco, sem revelar o cadastro.
+- Recuperação de senha depende da configuração de URL e de entrega de e-mail do Supabase.
+
+## Desenvolvimento
+
+`npm run dev`, `npm run build`, `node node_modules/typescript/bin/tsc --noEmit`. Publicação utiliza os helpers oficiais Sites e `.openai/hosting.json`. A variável secreta `AGENDA_GATEWAY_SECRET` existe apenas no runtime hospedado e na tabela privada; não incluir em arquivos de código, arquivos locais ou logs.
+
+O primeiro acesso detecta a ausência do Master e abre automaticamente a configuração inicial apenas para o e-mail do proprietário vinculado no runtime por `AGENDA_OWNER_EMAIL`. A senha é confirmada no formulário, e a resposta de confirmação de e-mail permanece visível. Não criar a conta do usuário por scripts nem definir senha padrão.
+
+## Atualização: celular, planos, documentos e WhatsApp
+
+Aplique `database/schema.sql` e depois `database/mobile-messages-additions.sql` para reproduzir o banco em um projeto novo. A atualização hospedada é aditiva: não substitui o gateway original. A exclusão de planos é lógica (`deleted_at` e `active=false`), com auditoria; licenças existentes permanecem vinculadas. O servidor omite planos excluídos das novas contratações.
+
+O formulário Master permite CPF ou CNPJ e valida os dígitos, inclusive no formato alfanumérico do CNPJ, conforme o [manual técnico da Receita Federal](https://www.gov.br/receitafederal/pt-br/centrais-de-conteudo/publicacoes/documentos-tecnicos/cnpj/manual-dv-cnpj.pdf). O documento não aparece no catálogo público. Cadastros antigos podem completar o documento ao gerenciar a empresa.
+
+Cada agendamento armazena `payment_method` (A combinar, Pix, Dinheiro, Cartão de débito ou Cartão de crédito). A seleção pública é uma indicação: não realiza cobrança. Os modelos de confirmação, reagendamento e cancelamento ficam no menu WhatsApp e no atalho Mensagens de cada cliente. As mensagens usam os dados salvos da agenda, incluindo pagamento, e aceitam personalização pelo administrador. Modelos privados ficam em tabela com RLS e acesso por RPC autorizado. O botão abre uma conversa com texto pronto; a pessoa revisa e envia no WhatsApp. Nenhuma mensagem é enviada automaticamente pela plataforma.
+
+Em telas pequenas, as tabelas viram cartões, controles têm altura mínima de 44–48 px e os campos usam fonte 16 px. As páginas foram conferidas em quadros de 360 e 390 px, com medição de ausência de rolagem horizontal; a reserva pública e o formulário CPF/CNPJ usam o mesmo estilo móvel. As rotas temporárias de QA não fazem parte da publicação.
+
+Verificações específicas: `node --experimental-strip-types scripts/verify-new-features.mjs` e `database/verify-new-features.sql` (fixtures transacionais e rollback). Cobrem documentos, exclusão de plano vinculado sem perda de licença, pagamento, templates, isolamento de empresas e permissões. O hash da função central do gateway permaneceu igual após a atualização.
