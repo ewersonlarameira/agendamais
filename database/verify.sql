@@ -1,0 +1,34 @@
+begin;
+do $$
+declare ta uuid;tb uuid;sid uuid;pid uuid;uid uuid:=gen_random_uuid();booked jsonb;slot timestamptz;catalog jsonb;n int; denied boolean:=false; secret text;
+begin
+insert into auth.users(id,email,email_confirmed_at) values(uid,'isolated-fixture@example.invalid',now());
+insert into public.tenants(name,slug,responsible,email) values('TESTE TRANSACIONAL A','fixture-a','Fixture','isolated-fixture@example.invalid') returning id into ta;
+insert into public.tenants(name,slug,responsible,email) values('TESTE TRANSACIONAL B','fixture-b','Fixture','other@example.invalid') returning id into tb;
+insert into public.licenses(tenant_id,starts_on,expires_on) values(ta,current_date,current_date+30),(tb,current_date,current_date+30);
+insert into public.settings(tenant_id,data) values(ta,'{"days":[0,1,2,3,4,5,6],"opening":"09:00","closing":"18:00","min_notice":0,"max_days":30}'),(tb,'{}');
+insert into public.memberships(tenant_id,email,user_id,role) values(ta,'isolated-fixture@example.invalid',uid,'admin');
+insert into public.services(tenant_id,name,duration,price) values(ta,'Teste',30,35) returning id into sid;
+insert into public.professionals(tenant_id,name,service_ids) values(ta,'Fixture',array[sid]) returning id into pid;
+select starts_at into slot from app_private.slots(ta,sid,pid,current_date+1) limit 1;
+if slot is null then raise exception 'FAIL: nenhum slot';end if;
+catalog:=public.agenda_api('catalog','{"slug":"fixture-a"}');
+if catalog ? 'customers' or catalog ? 'appointments' then raise exception 'FAIL: dados privados no catálogo';end if;
+select value into secret from app_private.secrets where key='gateway';
+booked:=public.agenda_api('book',jsonb_build_object('slug','fixture-a','service_id',sid,'professional_id',pid,'starts_at',slot,'name','Cliente de Teste','phone','24999999999','secret',secret,'ip','fixture'));
+if booked->>'protocol' is null then raise exception 'FAIL: protocolo ausente';end if;
+begin perform public.agenda_api('book',jsonb_build_object('slug','fixture-a','service_id',sid,'professional_id',pid,'starts_at',slot,'name','Outro Cliente','phone','24988888888','secret',secret,'ip','fixture'));exception when others then denied:=true;end;
+if not denied then raise exception 'FAIL: reserva duplicada';end if;
+perform set_config('request.jwt.claim.sub',uid::text,true);
+if app_private.role(ta) is distinct from 'admin' or app_private.role(tb) is not null then raise exception 'FAIL: isolamento de roles';end if;
+denied:=false;begin perform public.agenda_api('workspace',jsonb_build_object('tenant_id',tb));exception when others then denied:=true;end;
+if not denied then raise exception 'FAIL: acesso entre empresas';end if;
+perform public.agenda_api('workspace',jsonb_build_object('tenant_id',ta));
+update public.tenants set status='suspended' where id=ta;
+if app_private.role(ta) is not null then raise exception 'FAIL: empresa suspensa mantém acesso';end if;
+if exists(select 1 from app_private.slots(ta,sid,pid,current_date+1)) then raise exception 'FAIL: suspensa com slots';end if;
+insert into public.platform_admins values(uid);
+if jsonb_array_length(public.agenda_api('master_data','{}')->'plans')<3 then raise exception 'FAIL: planos master';end if;
+raise notice 'PASS: catálogo sem PII, disponibilidade, reserva, protocolo, duplicidade, isolamento e suspensão';
+end $$;
+rollback;
