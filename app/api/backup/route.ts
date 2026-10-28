@@ -1,0 +1,4 @@
+import {cookies} from 'next/headers';
+import {SB,KEY,guard,failure} from '../../../lib/agenda';
+import {readBody} from '../../../supabase/functions/agenda-backup/crypto';
+export async function POST(req:Request){try{guard(req);const c=await cookies();const token=c.get('agenda_access')?.value;if(!token)return Response.json({error:'Entre na conta Master.'},{status:401,headers:{'Cache-Control':'no-store'}});const body=await readBody(req);const r=await fetch(SB+'/functions/v1/agenda-backup',{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store'});return new Response(r.body,{status:r.status,headers:{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});}catch(e){return failure(e);}}

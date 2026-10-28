@@ -62,3 +62,8 @@ Suítes locais: Financeiro, Push, criptografia de backup, provisionamento, crede
 - Decisão sobre recursos iguais para todos os planos ou restrições por assinatura.
 
 Referências oficiais: [produção Supabase](https://supabase.com/docs/guides/deployment/going-into-prod), [backups](https://supabase.com/docs/guides/platform/backups), [senhas](https://supabase.com/docs/guides/auth/password-security), [Next corrigido](https://github.com/advisories/GHSA-2464-fhr4-w9xw), [React Server DOM corrigido](https://github.com/advisories/GHSA-wx67-qw84-cm4g).
+
+
+## Atualização: backup e restauração no Master
+
+Disponíveis exportação criptografada completa dos dados da aplicação (incluindo clientes, histórico, contas de acesso e imagens) e recuperação aditiva com prévia e confirmação. Consulte `docs/backup-and-recovery.md` para limites e exclusões. Testes transacionais de recuperação realizados com rollback; ensaio de infraestrutura em outro projeto e rotina externa automática continuam pendentes.
