@@ -140,6 +140,21 @@ O botão abre o WhatsApp com a mensagem pronta. O Master revisa o destinatário 
 
 No computador, os planos abrem diretamente em `web.whatsapp.com/send`, evitando a passagem do texto pelo redirecionamento para o aplicativo nativo. Celulares e iPads mantêm a abertura pelo aplicativo. A codificação da mensagem preserva o texto Unicode completo, incluindo emojis compostos. Se uma versão do WhatsApp ainda substituir caracteres, a seção “Emojis diferentes ao abrir o WhatsApp?” permite copiar a mensagem e abrir uma conversa sem texto no link para colar o conteúdo original. `scripts/verify-plan-sharing.mjs` verifica a igualdade dos bytes UTF-8, destinos por dispositivo e o caminho alternativo; não verifica a renderização dentro do WhatsApp.
 
+## Master: edição completa da empresa
+
+Aplique `database/master-company-editor.sql` e publique a função `supabase/functions/agenda-master-company`. Em Master → Empresas → Editar empresa, o editor oferece:
+
+- Dados: nome, responsável, e-mail comercial, telefone, CPF/CNPJ e link exclusivo. Alterar o link pede confirmação, pois o endereço anterior deixa de funcionar.
+- Licença: plano, início, vencimento, valor, pagamento e suspensão/reativação. Planos excluídos já contratados podem ser mantidos. O editor verifica a revisão dos dados para impedir que uma tela antiga sobrescreva alterações recentes.
+- Configurações: dados públicos, razão social, endereço, redes sociais, logo, paletas e funcionamento, utilizando os mesmos validadores do painel da empresa.
+- Acessos: autorizar usuários, mudar permissões e vínculo profissional, ativar/desativar, criar senha inicial e alterar e-mail de login ou senha. A desativação vale somente para a empresa selecionada e desativa os avisos desse usuário nessa empresa.
+
+O e-mail comercial não altera o login. A edição de credenciais usa a API administrativa do Auth na Edge, com sessão e permissão Master verificadas; senhas não entram no PostgreSQL de negócio, auditoria ou respostas. Contas Master e contas vinculadas a outras empresas não podem ter suas credenciais globais alteradas nesse editor. Para essas contas, as permissões específicas da empresa continuam editáveis. Não há consulta de senha atual, apenas definição de nova senha. A atualização de credenciais também desativa as inscrições Push do usuário na empresa para reautorização. Não promete invalidação imediata de JWTs já emitidos; a desativação da permissão é a ação para bloquear o acesso à empresa.
+
+Uma falha de rede após alterar Auth pode exigir reabrir o editor e repetir o mesmo e-mail para sincronizar o vínculo. Contas antigas autorizadas somente por e-mail são vinculadas ao identificador do Auth antes de uma troca de e-mail. Contas novas recebem metadados administrativos para retomar o vínculo sem tomar uma conta alheia.
+
+`database/verify-master-company-editor.sql` verifica os fluxos no banco com rollback. `scripts/verify-master-company-credentials.mjs` verifica a orquestração de Auth com serviços simulados. As abas Dados, Licença e Acessos foram inspecionadas no navegador usando uma página local temporária com dados simulados, removida antes da publicação. Nenhuma credencial real de cliente foi alterada nos testes.
+
 `database/verify-backup.sql` testa autorização, cobertura e reconstituição financeira em tabelas temporárias com rollback. `node scripts/verify-backup-crypto.mjs` testa a ferramenta de criptografia e sua integridade. `node scripts/verify-public-access.mjs` verifica o acesso público, bloqueios de APIs e ausência de dados privados no catálogo, sem criar contas nem enviar e-mails.
 
 O roteiro de operação, incluindo o que ainda não foi ativado, está em `docs/backup-and-recovery.md`. O resultado da conferência e as pendências de lançamento estão em `docs/commercial-readiness.md`. Não há backup automático externo nem recuperação de desastre completa homologada nesta entrega.
