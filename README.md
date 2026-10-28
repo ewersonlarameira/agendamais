@@ -163,6 +163,14 @@ No menu WhatsApp do estabelecimento, “Copiar mensagem com emojis” e a ajuda 
 
 `scripts/verify-whatsapp-templates.mjs` cobre os três tipos de mensagem, modelos personalizados e padrão, múltiplos dispositivos, preenchimento dos dados e igualdade dos bytes UTF-8. Esses testes não enviam mensagens reais e não verificam a renderização final dentro do aplicativo WhatsApp.
 
+## Revisão de revenda e recuperação por suporte — 28/10/2026
+
+O login inclui “Esqueci minha senha” abaixo do formulário, direcionando para o WhatsApp do suporte **(24) 99907-4698** (`5524999074698`). A solicitação contém somente e-mail informado e contexto do painel; nunca contém senhas ou tokens. O envio e a verificação de identidade são feitos no atendimento. A definição da nova senha ocorre pelo editor Master. O primeiro acesso passa a ser fornecido pelo Master/suporte; o atalho público de autoativação por e-mail foi retirado. Detalhes em [docs/support-and-launch.md](docs/support-and-launch.md).
+
+A revisão atualizou dependências com correções de segurança, validou requisições de autenticação com limite de tamanho e ajustou a identidade PWA no painel do estabelecimento. Novas senhas aceitam pelo menos 10 caracteres e até 72 bytes. `scripts/verify-launch-readiness.mjs` testa esses limites, o número de suporte, o contexto sem tokens e o cache seguro do Service Worker. O audit completo retornou zero avisos conhecidos após as atualizações; isso não é uma garantia de ausência de falhas desconhecidas.
+
+O resultado e os limites da verificação, incluindo as pendências reais de backup, recuperação, documentos e dispositivos, estão em [docs/commercial-readiness.md](docs/commercial-readiness.md). A política de recuperação manual escolhida não exige SMTP; o serviço só será necessário se forem retomados os fluxos automáticos de e-mail.
+
 `database/verify-backup.sql` testa autorização, cobertura e reconstituição financeira em tabelas temporárias com rollback. `node scripts/verify-backup-crypto.mjs` testa a ferramenta de criptografia e sua integridade. `node scripts/verify-public-access.mjs` verifica o acesso público, bloqueios de APIs e ausência de dados privados no catálogo, sem criar contas nem enviar e-mails.
 
 O roteiro de operação, incluindo o que ainda não foi ativado, está em `docs/backup-and-recovery.md`. O resultado da conferência e as pendências de lançamento estão em `docs/commercial-readiness.md`. Não há backup automático externo nem recuperação de desastre completa homologada nesta entrega.

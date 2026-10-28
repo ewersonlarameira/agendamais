@@ -1,8 +1,9 @@
 import {cookies} from 'next/headers';
 import {SB,KEY,guard,failure,rpc,rpcNamed} from '../../../lib/agenda';
+import {readAuthInput} from '../../../lib/auth-input';
 import {getChatGPTUser} from '../../chatgpt-auth';
 async function auth(path:string,body:any,token?:string){const r=await fetch(SB+'/auth/v1/'+path,{method:path==='user'?'PUT':'POST',headers:{apikey:KEY,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(body)});const d:any=await r.json();if(!r.ok)throw new Error(d.msg||d.message||d.error_description||'Não foi possível autenticar.');return d;}
-export async function POST(req:Request){try{guard(req);const p:any=await req.json();const c=await cookies();let d:any;const origin=new URL(req.url).origin;const returnTo=typeof p.returnTo==='string'&&/^\/(?!\/)/.test(p.returnTo)?p.returnTo:'/master';const token=c.get('agenda_access')?.value;
+export async function POST(req:Request){try{guard(req);const p:any=await readAuthInput(req);const c=await cookies();let d:any;const origin=new URL(req.url).origin;const returnTo=typeof p.returnTo==='string'&&/^\/(?!\/)/.test(p.returnTo)?p.returnTo:'/master';const token=c.get('agenda_access')?.value;
 if(p.action==='logout'){
  let logoutToken=token;const refresh=c.get('agenda_refresh')?.value;
  if(!logoutToken&&refresh)logoutToken=(await auth('token?grant_type=refresh_token',{refresh_token:refresh})).access_token;
