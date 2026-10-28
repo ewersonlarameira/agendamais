@@ -11,6 +11,3 @@ export function plansWhatsAppMessage(plans:SharePlan[],name=''){
  });
  return `${greeting}\n\n📅 *Agenda+ — planos de assinatura*\nConheça as opções para organizar e gerenciar seu estabelecimento:\n\n${options.join('\n\n────────────\n\n')}\n\n💬 Qual plano combina melhor com seu negócio? Responda com o nome da opção escolhida ou envie suas dúvidas. Estamos à disposição! 😊\n\nℹ️ Os valores acima correspondem ao período de cada assinatura. A contratação será concluída com nosso atendimento.`;
 }
-
-// Desktop bypasses the wa.me → native-app handoff, which may replace astral Unicode.
-export function planWhatsAppTarget(userAgent:string,touchPoints=0):'app'|'web'{return /Android|iPhone|iPad|iPod/i.test(userAgent)||(/Macintosh/i.test(userAgent)&&touchPoints>1)?'app':'web';}

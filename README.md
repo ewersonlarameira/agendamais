@@ -155,6 +155,14 @@ Uma falha de rede após alterar Auth pode exigir reabrir o editor e repetir o me
 
 `database/verify-master-company-editor.sql` verifica os fluxos no banco com rollback. `scripts/verify-master-company-credentials.mjs` verifica a orquestração de Auth com serviços simulados. As abas Dados, Licença e Acessos foram inspecionadas no navegador usando uma página local temporária com dados simulados, removida antes da publicação. Nenhuma credencial real de cliente foi alterada nos testes.
 
+## Emojis em todas as mensagens de agendamento
+
+O gerador compartilhado `whatsappUrl` agora escolhe automaticamente WhatsApp Web no computador e o aplicativo nos celulares. A regra vale para confirmação, cancelamento, reagendamento, compartilhamento de planos e envio dos dados pela página pública. Não depende de migração ou configuração da empresa: abrange empresas atuais e futuras, mantendo os modelos personalizados. A seleção manual de destino continua disponível no código para testes e contextos específicos.
+
+No menu WhatsApp do estabelecimento, “Copiar mensagem com emojis” e a ajuda “Emojis diferentes ao abrir o WhatsApp?” oferecem a alternativa de colar o texto original em uma conversa sem mensagem no link. As mesmas validações de cliente, modelo, status do agendamento e ambiente demonstrativo se aplicam aos dois caminhos de abertura.
+
+`scripts/verify-whatsapp-templates.mjs` cobre os três tipos de mensagem, modelos personalizados e padrão, múltiplos dispositivos, preenchimento dos dados e igualdade dos bytes UTF-8. Esses testes não enviam mensagens reais e não verificam a renderização final dentro do aplicativo WhatsApp.
+
 `database/verify-backup.sql` testa autorização, cobertura e reconstituição financeira em tabelas temporárias com rollback. `node scripts/verify-backup-crypto.mjs` testa a ferramenta de criptografia e sua integridade. `node scripts/verify-public-access.mjs` verifica o acesso público, bloqueios de APIs e ausência de dados privados no catálogo, sem criar contas nem enviar e-mails.
 
 O roteiro de operação, incluindo o que ainda não foi ativado, está em `docs/backup-and-recovery.md`. O resultado da conferência e as pendências de lançamento estão em `docs/commercial-readiness.md`. Não há backup automático externo nem recuperação de desastre completa homologada nesta entrega.

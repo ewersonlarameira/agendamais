@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import ts from 'typescript';
 import {readFileSync} from 'node:fs';
 async function load(path){const code=ts.transpile(readFileSync(new URL(path,import.meta.url),'utf8'),{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022});return import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));}
-const {availableSharePlans,plansWhatsAppMessage,planWhatsAppTarget}=await load('../lib/plan-sharing.ts');
-const {whatsappUrl}=await load('../lib/whatsapp.ts');
+const {availableSharePlans,plansWhatsAppMessage}=await load('../lib/plan-sharing.ts');
+const {whatsappUrl,whatsappTarget:planWhatsAppTarget}=await load('../lib/whatsapp.ts');
 const description='📅 👋 💳 💰 🔄 📋 ✅ ✂️ 👨🏽‍💼\nDescrição & preços + 100% de atenção à ação';
 const plans=[{id:'monthly',name:'Básico',amount:49.9,months:1,description,active:true},{id:'annual',name:'Anual',amount:499.9,months:12,description:'📲 Aplicativo',active:true},{id:'gone',name:'Excluído',amount:1,months:1,active:true,deleted_at:'2026-01-01'},{id:'off',name:'Inativo',amount:1,months:1,active:false}];
 assert.equal(availableSharePlans(plans).length,2);
