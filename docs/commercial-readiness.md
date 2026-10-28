@@ -67,3 +67,7 @@ Referências oficiais: [produção Supabase](https://supabase.com/docs/guides/de
 ## Atualização: backup e restauração no Master
 
 Disponíveis exportação criptografada completa dos dados da aplicação (incluindo clientes, histórico, contas de acesso e imagens) e recuperação aditiva com prévia e confirmação. Consulte `docs/backup-and-recovery.md` para limites e exclusões. Testes transacionais de recuperação realizados com rollback; ensaio de infraestrutura em outro projeto e rotina externa automática continuam pendentes.
+
+## Atualização: consulta da agenda pelo funcionário
+
+Disponível criação de e-mail/senha no cadastro do profissional e consulta em `/<empresa>/agendaprofissional`. O papel profissional recebe somente a própria agenda; endpoints legados de workspace, status, pagamento e modelos de WhatsApp também recusam esse papel. Testes transacionais com rollback validaram isolamento, revogação e preservação das permissões administrativas. Criação de contas via serviço Auth foi verificada com serviços simulados; nenhuma conta real de funcionário foi criada na implantação. Operação descrita em `docs/professional-agenda.md`.
