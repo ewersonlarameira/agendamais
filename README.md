@@ -132,6 +132,12 @@ O e-mail de uma conta existente não pode ter sua senha sobrescrita ao criar out
 
 `scripts/verify-company-access.mjs` verifica a orquestração com serviços simulados. `database/verify-company-access.sql` testa permissões, isolamento, proteção de contas existentes e retomada, com rollback dos dados de teste. A criação e o primeiro login de uma conta Auth real não foram testados nesta atualização: a revisão automática bloqueou o teste persistente sem limpeza no ambiente de produção.
 
+## Compartilhar planos pelo WhatsApp
+
+No Master → Planos, use “Compartilhar planos pelo WhatsApp” para montar uma proposta com vários planos, ou “Enviar este plano” no cartão para compartilhar uma opção. Somente planos ativos e não excluídos entram na proposta. Informe nome opcional e telefone com DDD, ou utilize o contato de uma empresa cadastrada. A prévia reúne os nomes, preços por período, renovação e descrições atuais; não inclui credenciais, dados financeiros da empresa nem auditoria.
+
+O botão abre o WhatsApp com a mensagem pronta. O Master revisa o destinatário e confirma o envio no WhatsApp; não há disparo automático nem registro de contratação por esse botão. Também é possível copiar a mensagem. A escolha e a contratação são concluídas na conversa com o cliente. Textos acima de 10.000 caracteres exigem selecionar menos planos ou copiar a mensagem.
+
 `database/verify-backup.sql` testa autorização, cobertura e reconstituição financeira em tabelas temporárias com rollback. `node scripts/verify-backup-crypto.mjs` testa a ferramenta de criptografia e sua integridade. `node scripts/verify-public-access.mjs` verifica o acesso público, bloqueios de APIs e ausência de dados privados no catálogo, sem criar contas nem enviar e-mails.
 
 O roteiro de operação, incluindo o que ainda não foi ativado, está em `docs/backup-and-recovery.md`. O resultado da conferência e as pendências de lançamento estão em `docs/commercial-readiness.md`. Não há backup automático externo nem recuperação de desastre completa homologada nesta entrega.
