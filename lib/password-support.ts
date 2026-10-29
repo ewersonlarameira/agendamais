@@ -9,3 +9,6 @@ export function passwordSupportMessage(email='',pathname='/',origin=''){
  return ['Olá! 👋 Preciso de ajuda para redefinir minha senha de acesso ao Agenda+.','',[context,account,link].filter(Boolean).join('\n'),'','Podem me orientar na recuperação do acesso?'].join('\n');
 }
 export function passwordSupportUrl(email='',pathname='/',origin=''){return whatsappUrl(passwordSupportPhone,passwordSupportMessage(email,pathname,origin));}
+
+export function unlockSupportMessage(email='',pathname='/',origin=''){return passwordSupportMessage(email,pathname,origin).replace('Preciso de ajuda para redefinir minha senha de acesso ao Agenda+.','Meu acesso ao Agenda+ foi bloqueado após 5 tentativas incorretas de login ou senha.').replace('Podem me orientar na recuperação do acesso?','Solicito a verificação da minha identidade e o desbloqueio do acesso. Podem me ajudar?');}
+export function unlockSupportUrl(email='',pathname='/',origin=''){return whatsappUrl(passwordSupportPhone,unlockSupportMessage(email,pathname,origin));}

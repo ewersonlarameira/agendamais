@@ -1,0 +1,10 @@
+'use client';
+import {useEffect,useState} from 'react';
+type Row={email:string;failures:number;blocked_at:string};
+export default function LoginLocks({request,notify}:{request:(op:string,p?:any)=>Promise<any>;notify:(message:string)=>void}){
+ const [rows,R]=useState<Row[]>([]),[loading,L]=useState(true),[busy,B]=useState(''),[error,E]=useState('');
+ async function load(){L(true);try{R(await request('login_locks'));E('')}catch(e){E(e instanceof Error?e.message:'Não foi possível consultar.')}finally{L(false)}}
+ useEffect(()=>{void load()},[]);
+ async function unlock(email:string){if(!confirm('Desbloquear '+email+'? Confirme a identidade e a autorização do solicitante antes de prosseguir.'))return;B(email);try{await request('login_unlock',{email,confirmation:'DESBLOQUEAR'});await load();notify('Acesso desbloqueado. O usuário poderá tentar entrar novamente com e-mail e senha.')}catch(e){notify(e instanceof Error?e.message:'Não foi possível desbloquear.')}finally{B('')}}
+ return <section className="panel settingspanel"><h2>🔐 Acessos bloqueados</h2><p>Contas bloqueadas após 5 tentativas incorretas. Desbloqueie somente após conferir a identidade do solicitante pelo atendimento de suporte.</p><button className="secondary" disabled={loading||!!busy} onClick={()=>void load()}>↻ Atualizar lista</button>{error&&<p role="alert" className="notice">{error}</p>}{loading?<p role="status">Consultando bloqueios…</p>:<><div className="company-members">{rows.map(r=><section className="company-member" key={r.email}><div><strong>{r.email}</strong><small>{r.failures} tentativas incorretas · {new Date(r.blocked_at).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'})}</small></div><button className="secondary" disabled={!!busy} onClick={()=>void unlock(r.email)}>{busy===r.email?'Desbloqueando…':'🔓 Desbloquear acesso'}</button></section>)}</div>{!rows.length&&!error&&<p>Nenhum acesso bloqueado.</p>}</>}<p className="tiny">O desbloqueio zera a contagem, preserva a senha e fica registrado na auditoria.</p></section>;
+}
