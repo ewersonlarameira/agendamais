@@ -1,24 +1,25 @@
 'use client';
-import {useEffect,useState,type ReactNode} from 'react';
+import {useEffect,useState,useRef,type ReactNode} from 'react';
 import {neonTheme} from '../lib/theme';
 import {professionalPeriod,professionalAgendaPath} from '../lib/professional-agenda';
 type Row=Record<string,any>;
-type Props={slug:string;notify:(message:string)=>void;request:(op:string,p?:Row)=>Promise<any>;authenticate:(p:Row)=>Promise<any>;renderLogin:(done:()=>Promise<void>)=>ReactNode};
+type Props={initialAuthenticated?:boolean;slug:string;notify:(message:string)=>void;request:(op:string,p?:Row)=>Promise<any>;authenticate:(p:Row)=>Promise<any>;renderLogin:(done:()=>Promise<void>)=>ReactNode};
 const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});
 const initialDay=()=>{const value=typeof location!=='undefined'?new URLSearchParams(location.search).get('date'):null;return value&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))?value:today()};
 const time=(value:string)=>new Date(value).toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit'});
 const date=(value:string)=>new Date(value).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
-export default function ProfessionalAgenda({slug,notify,request,authenticate,renderLogin}:Props){
+export default function ProfessionalAgenda({initialAuthenticated=false,slug,notify,request,authenticate,renderLogin}:Props){
  const [tenant,T]=useState<Row|null>(null),[ready,R]=useState(false),[error,E]=useState(''),[data,D]=useState<Row|null>(null),[busy,B]=useState(false),[day,Y]=useState(initialDay),[view,V]=useState('Dia'),[reload,Q]=useState(0);
- async function load(){try{const session=await request('session');const linked=session.tenants.find((t:Row)=>t.slug===slug&&t.role==='professional');T(linked||null);D(null);E(linked?'':'Seu usuário não possui acesso profissional ativo a este estabelecimento.');R(true);}catch(e){T(null);R(false);throw e;}}
- useEffect(()=>{let cancelled=false;authenticate({action:'refresh'}).then(()=>{if(!cancelled)return load()}).catch(()=>{if(!cancelled)R(false)});return()=>{cancelled=true}},[slug]);
+ const accessAllowed=useRef(initialAuthenticated);
+ async function load(){try{const session=await request('session');if(!accessAllowed.current)return;const linked=session.tenants.find((t:Row)=>t.slug===slug&&t.role==='professional');T(linked||null);D(null);E(linked?'':'Seu usuário não possui acesso profissional ativo a este estabelecimento.');R(true);}catch(e){T(null);R(false);throw e;}}
+ useEffect(()=>{if(initialAuthenticated)void load().catch(()=>R(false))},[slug,initialAuthenticated]);
  useEffect(()=>{if(!tenant)return;let cancelled=false,inflight=false;const period=professionalPeriod(day,view);
-  async function refresh(){if(inflight)return;inflight=true;B(true);try{const next=await request('professional_schedule',{tenant_id:tenant!.id,...period});if(!cancelled){D(next);E('')}}catch(e){if(!cancelled){D(null);E(e instanceof Error?e.message:'Não foi possível carregar a agenda.')}}finally{inflight=false;if(!cancelled)B(false)}}
+  async function refresh(){if(inflight)return;inflight=true;B(true);try{const next=await request('professional_schedule',{tenant_id:tenant!.id,...period});if(!cancelled&&accessAllowed.current){D(next);E('')}}catch(e){if(!cancelled){D(null);E(e instanceof Error?e.message:'Não foi possível carregar a agenda.')}}finally{inflight=false;if(!cancelled)B(false)}}
   void refresh();const interval=setInterval(()=>{if(document.visibilityState==='visible')void refresh()},30000);const focus=()=>{if(document.visibilityState==='visible')void refresh()};document.addEventListener('visibilitychange',focus);window.addEventListener('focus',focus);
   return()=>{cancelled=true;clearInterval(interval);document.removeEventListener('visibilitychange',focus);window.removeEventListener('focus',focus)};
  },[tenant,day,view,reload,request]);
- async function logout(){try{await authenticate({action:'logout'});D(null);T(null);R(false);E('')}catch(e){notify(e instanceof Error?e.message:'Não foi possível sair.')}}
- if(!ready)return renderLogin(load);
+ async function logout(){accessAllowed.current=false;try{await authenticate({action:'logout'})}catch(e){notify(e instanceof Error?e.message:'Não foi possível sair.')}finally{D(null);T(null);R(false);E('')}}
+ if(!ready)return renderLogin(async()=>{accessAllowed.current=true;await load()});
  const settings=data?.settings||{};const appointments:Row[]=data?.appointments||[];
  return <div className="professional-agenda" style={neonTheme(settings.palette,settings.accent)}><header className="professional-topbar"><a href={professionalAgendaPath(slug)} className="brand"><span className="brand-wordmark">agenda<span>+</span></span></a><span className="pill">📅 Agenda profissional</span><button className="secondary" onClick={()=>void logout()}>Sair</button></header><main className="professional-content"><div className="pageheading"><div><span className="eyebrow">{data?.tenant.name||tenant?.name||'ÁREA DO PROFISSIONAL'}</span><h1>{data?.professional.name?`Olá, ${data.professional.name}`:'Minha agenda'}<span className="headingdot">.</span></h1><p>Somente os atendimentos vinculados ao seu nome. Acesso para consulta.</p></div></div>
  {!tenant?<section className="panel"><p role="alert">{error}</p><a className="secondary" href={'/'+slug+'/admin'}>Voltar ao login do estabelecimento</a></section>:<section className="panel agenda"><div className="paneltop"><div><h2>📅 Minha agenda</h2><p>{appointments.length} registro(s) no período selecionado</p></div><div className="segmented">{['Dia','Semana','Mês'].map(v=><button key={v} type="button" aria-pressed={view===v} className={view===v?'selected':''} onClick={()=>{D(null);V(v)}}>{v}</button>)}</div></div><div className="toolbar"><div className="datecontrol"><button type="button" aria-label="Dia anterior" onClick={()=>{D(null);Y(new Date(new Date(day+'T12:00:00Z').getTime()-86400000).toISOString().slice(0,10))}}>‹</button><label className="professional-date">Data da agenda<input type="date" value={day} onChange={e=>{if(e.target.value){D(null);Y(e.target.value)}}}/></label><button type="button" aria-label="Próximo dia" onClick={()=>{D(null);Y(new Date(new Date(day+'T12:00:00Z').getTime()+86400000).toISOString().slice(0,10))}}>›</button><button type="button" onClick={()=>{D(null);Y(today());Q(q=>q+1)}}>Hoje</button></div><button type="button" className="secondary" disabled={busy} onClick={()=>Q(q=>q+1)}>{busy?'Atualizando…':'↻ Atualizar agenda'}</button></div>
