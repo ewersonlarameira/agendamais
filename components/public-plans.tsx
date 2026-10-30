@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useState} from 'react';
+import SectionBanner from './section-banner';
 import {planRenewalLabel} from '../lib/plan-sharing';
 type Plan={id:string;name:string;amount:number|string;months:number;description:string};
 export default function PublicPlans(){
@@ -16,7 +17,7 @@ export default function PublicPlans(){
   const channel=typeof BroadcastChannel!=='undefined'?new BroadcastChannel('agenda-public-plans'):null;if(channel)channel.onmessage=()=>void refresh();
   return()=>{cancelled=true;clearInterval(timer);window.removeEventListener('focus',visible);document.removeEventListener('visibilitychange',visible);channel?.close();controller?.abort()};
  },[retry]);
- return <section id="planos" className="sales-plans" aria-labelledby="sales-plans-title"><div className="sales-section-intro"><span className="sales-kicker">PLANOS DE ASSINATURA</span><h2 id="sales-plans-title">Escolha o plano para o seu negócio.</h2><p>Compare os valores, a renovação e o que está incluído em cada assinatura.</p></div>
+ return <section id="planos" className="sales-plans" aria-labelledby="sales-plans-title"><SectionBanner scene="plans" label="Escolha como organizar o próximo capítulo."/><div className="sales-section-intro"><span className="sales-kicker">PLANOS DE ASSINATURA</span><h2 id="sales-plans-title">Escolha o plano para o seu negócio.</h2><p>Compare os valores, a renovação e o que está incluído em cada assinatura.</p></div>
  {error?<div className="sales-plans-message" role="alert"><p>{error}</p><button className="sales-button sales-button-outline" type="button" onClick={()=>R(r=>r+1)}>Tentar novamente</button></div>:plans===null?<p role="status">Carregando planos…</p>:plans.length?<div className="sales-plan-grid">{plans.map(plan=><article className="sales-plan-card" key={plan.id}><div className="sales-plan-heading"><span className="sales-plan-period">Renovação {planRenewalLabel(plan.months).toLowerCase()}</span><h3>{plan.name}</h3><div className="sales-plan-price"><strong>{Number(plan.amount).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</strong><span>{plan.months===1?'/ mês':plan.months===12?'/ ano':`a cada ${plan.months} meses`}</span></div></div><div className="sales-plan-description">{plan.description.trim()||'Os detalhes desta assinatura serão disponibilizados em breve.'}</div></article>)}</div>:<p className="sales-plans-message">Os planos serão disponibilizados em breve.</p>}
  </section>;
 }
