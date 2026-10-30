@@ -15,3 +15,6 @@ Direção comum dos prompts: fotografia cinematográfica para banner de marketin
 
 ## Apresentação por seção
 As imagens agora são fundos amplos delimitados pela própria seção, sem cartões ou faixas estreitas. `object-fit: contain` mantém a composição inteira, sem recortar pessoas ou equipamentos. Em telas pequenas, a imagem completa aparece no topo da seção e se dissolve no conteúdo abaixo. Os textos principais existentes ficam sobre o fundo no desktop, com gradientes para contraste.
+
+## Barbearias e profissionais homens
+Na abertura, em recursos e no encerramento, novas imagens geradas pela ferramenta integrada alternam o público masculino com as demais cenas do salão. Arquivos: overview-barbers.webp (barbeiro gerenciando horários no notebook), resources-barbers.webp (cliente no celular e barbeiro com calendário no notebook), routine-barbers.webp (dois barbeiros consultando tablet). Prompts: fotografia cinematográfica 1536 × 1024 em barbearia, pessoas e dispositivos à direita, espaço negativo à esquerda, cabeças e mãos inteiras, tons carvão #090c13 e dourado #f4cb6b, bordas esmaecidas, interfaces abstratas sem textos, sem marcas. Composição completa preservada por object-fit: contain.
