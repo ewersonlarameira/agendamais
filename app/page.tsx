@@ -1,1 +1,8 @@
-import Agenda from './ui';export default function Page(){return <Agenda/>}
+import type {Metadata} from 'next';
+import PlatformPresentation from '../components/platform-presentation';
+const url='https://automatizei-agendamais.com.br/';
+const title='Agenda+ | Sistema de agendamento para barbearias e salões';
+const description='Organize sua barbearia ou salão com o Agenda+: agendamento online, cadastro de clientes, agenda dos profissionais e gestão financeira. Conheça os planos.';
+export const metadata:Metadata={title,description,alternates:{canonical:url},robots:{index:true,follow:true},openGraph:{type:'website',locale:'pt_BR',siteName:'Agenda+',title,description,url,images:[{url:'https://automatizei-agendamais.com.br/images/presentation/overview-barbers.webp',width:1536,height:1024,alt:'Agenda+ para barbearias e salões'}]},twitter:{card:'summary_large_image',title,description,images:['https://automatizei-agendamais.com.br/images/presentation/overview-barbers.webp']}};
+const structuredData={'@context':'https://schema.org','@graph':[{'@type':'Organization','@id':url+'#organization',name:'Automatizei Digital',url,email:'automatizeidigital@gmail.com',sameAs:['https://www.instagram.com/automatizeidigital/','https://www.facebook.com/share/1FKDrqa5DT/']},{'@type':'WebSite','@id':url+'#website',url,name:'Agenda+',inLanguage:'pt-BR',publisher:{'@id':url+'#organization'}},{'@type':'SoftwareApplication',name:'Agenda+',url,applicationCategory:'BusinessApplication',operatingSystem:'Web, Android, iOS',description,publisher:{'@id':url+'#organization'}}]};
+export default function Page(){return <><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(structuredData).replace(/</g,'\\u003c')}}/><PlatformPresentation/></>}
