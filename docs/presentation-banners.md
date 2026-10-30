@@ -12,3 +12,6 @@ Direção comum dos prompts: fotografia cinematográfica para banner de marketin
 - routine.webp: duas profissionais acompanhando a agenda em um tablet.
 
 `components/section-banner.tsx` contém o banner reutilizável. Imagens decorativas usam texto alternativo vazio, legendas em HTML, dimensões explícitas e carregamento tardio abaixo do primeiro banner. Gradientes CSS preservam contraste. Nenhum dado de clientes foi usado na geração.
+
+## Apresentação por seção
+As imagens agora são fundos amplos delimitados pela própria seção, sem cartões ou faixas estreitas. `object-fit: contain` mantém a composição inteira, sem recortar pessoas ou equipamentos. Em telas pequenas, a imagem completa aparece no topo da seção e se dissolve no conteúdo abaixo. Os textos principais existentes ficam sobre o fundo no desktop, com gradientes para contraste.
