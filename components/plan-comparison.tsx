@@ -1,7 +1,7 @@
 type Plan={id:string;name:string;amount:number|string;months:number;description:string};
 const normalize=(value:string)=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const clean=(value:string)=>value.replace(/^[^\p{L}\p{N}]+/u,'').replace(/[;.]$/,'').trim();
-function benefits(plan:Plan){return plan.description.replace(/\\n/g,'\n').split('\n').map(clean).filter(line=>line&&!/^(para |recursos apresentados|notificacoes dependem|o envio das mensagens)/.test(normalize(line)));}
+function benefits(plan:Plan){return plan.description.replace(/\\n/g,'\n').split('\n').map(clean).filter(line=>line&&!/^(para |recursos apresentados)/.test(normalize(line))&&!/notificacoes dependem|o envio das mensagens/.test(normalize(line)));}
 const groups:[string,RegExp][]=[['Aplicativo instalável',/pwa|aplicativo/],['Notificações',/notifica/],['Acessos da equipe',/acessos individuais|acessos?\)/],['Agenda do funcionário',/propria agenda/],['Expediente e bloqueios',/jornadas|intervalos e bloqueios/],['Identidade visual',/paletas|personaliza.*logo/],['Exportação financeira',/csv|exporta/],['Mensagens de WhatsApp',/whatsapp/],['Página pública',/pagina publica/],['Regras de reserva',/antecedencia|prazo de reserva/],['Suporte',/suporte/]];
 const group=(line:string)=>groups.find(([,pattern])=>pattern.test(normalize(line)));
 const money=(amount:number|string)=>Number(amount).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
